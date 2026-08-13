@@ -1,0 +1,21 @@
+[project]
+name = "comfygotchi"
+version = "0.1.0"
+description = "A Tamagotchi that lives inside ComfyUI — eats images, feels love from API nodes, evolves."
+authors = [
+    { name = "ComfyGotchi" }
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pillow",
+    "numpy"
+]
+
+[tool.comfy-nodes]
+publisher = "@comfygotchi"
