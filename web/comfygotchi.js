@@ -4,8 +4,12 @@ import { api } from "../../scripts/api.js";
 const TICK_INTERVAL_MS = 60000;
 const POLL_INTERVAL_MS = 2000;
 
-const W = 180;
-const H = 200;
+const NODE_W = 200;
+const NODE_H = 380;
+const DEVICE_OFFSET_Y = 120;
+
+const W = 200;
+const H = 250;
 
 const SHELL_COLOR = "#f0e6d3";
 const SHELL_DARK = "#d4c4a8";
@@ -185,7 +189,7 @@ function drawAdult(ctx, cx, cy, mood, bob, weight, tier) {
   }
 }
 
-function drawGhost(ctx, cx, cy, alpha, bob) {
+function drawGhost(ctx, cx, cy, bob) {
   const oy = Math.round(bob * 0.5);
   const ex = cx;
   const ey = cy + oy;
@@ -236,14 +240,7 @@ function drawText(ctx, text, x, y, color = PIXEL_DARK) {
   ctx.fillText(text, x, y);
 }
 
-function drawCreature(ctx, state) {
-  if (!state) {
-    ctx.fillStyle = SHELL_COLOR;
-    ctx.fillRect(0, 0, W, H);
-    drawText(ctx, "...", 70, 80, PIXEL_DARK);
-    return;
-  }
-
+function drawDevice(ctx, state) {
   ctx.fillStyle = SHELL_COLOR;
   ctx.fillRect(0, 0, W, H);
 
@@ -256,7 +253,7 @@ function drawCreature(ctx, state) {
   const sx = 14;
   const sy = 16;
   const sw = W - 28;
-  const sh = 110;
+  const sh = 130;
 
   ctx.fillStyle = SCREEN_BG;
   ctx.fillRect(sx, sy, sw, sh);
@@ -275,20 +272,20 @@ function drawCreature(ctx, state) {
   ctx.strokeRect(sx - 1, sy - 1, sw + 2, sh + 2);
 
   const cx = sx + Math.round(sw / 2);
-  const cy = sy + Math.round(sh / 2) - 5;
+  const cy = sy + Math.round(sh / 2) - 10;
   const bob = Math.sin(animFrame * 0.05) * 2;
-  const stage = state.stage || "egg";
-  const mood = state.mood || "neutral";
-  const weight = state.weight || 50;
-  const tier = state.evolution_tier || 0;
+  const stage = state ? (state.stage || "egg") : "egg";
+  const mood = state ? (state.mood || "neutral") : "neutral";
+  const weight = state ? (state.weight || 50) : 50;
+  const tier = state ? (state.evolution_tier || 0) : 0;
 
   if (stage === "egg") {
-    const crack = (state.incubation_progress || 0) / 20;
+    const crack = state ? (state.incubation_progress || 0) / 20 : 0;
     drawEgg(ctx, cx, cy, crack, bob);
   } else if (stage === "hatchling") {
     drawHatchling(ctx, cx, cy, mood, bob, weight);
   } else if (stage === "ghost") {
-    drawGhost(ctx, cx, cy, 0.5, bob);
+    drawGhost(ctx, cx, cy, bob);
   } else {
     drawAdult(ctx, cx, cy, mood, bob, weight, tier);
   }
@@ -296,13 +293,13 @@ function drawCreature(ctx, state) {
   const barY = sy + sh + 4;
 
   drawText(ctx, "HUN", sx + 2, barY, PIXEL_DARK);
-  drawFoodBar(ctx, sx + 22, barY, state.hunger || 0, 100);
+  drawFoodBar(ctx, sx + 22, barY, state ? (state.hunger || 0) : 0, 100);
 
   drawText(ctx, "JOY", sx + 2, barY + 7, PIXEL_DARK);
-  const joyCount = Math.round((state.happiness || 0) / 25);
+  const joyCount = Math.round((state ? (state.happiness || 0) : 0) / 25);
   drawHearts(ctx, sx + 22, barY + 7, joyCount, 4);
 
-  const eaten = state.stats?.total_images_eaten || 0;
+  const eaten = state ? (state.stats?.total_images_eaten || 0) : 0;
   drawText(ctx, `MEALS:${eaten}`, sx + 2, barY + 16, PIXEL_DARK);
 
   if (tier > 0) {
@@ -338,10 +335,13 @@ app.registerExtension({
     const onNodeCreated = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function () {
       const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
-      this.setSize([W, H]);
+      this.setSize([NODE_W, NODE_H]);
       this.onDrawBackground = function (ctx) {
         if (this.flags.collapsed) return;
-        drawCreature(ctx, lastState);
+        ctx.save();
+        ctx.translate(0, DEVICE_OFFSET_Y);
+        drawDevice(ctx, lastState);
+        ctx.restore();
         animFrame++;
         this.setDirtyCanvas(true, false);
       };

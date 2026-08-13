@@ -38,8 +38,7 @@ class ComfyGotchiNode:
                 "image": ("IMAGE",),
             },
             "optional": {
-                "vision_model": (models, {"default": "none"}),
-                "florence2_model": ("FL2MODEL", {"tooltip": "Connect a Florence2 model loader here if vision_model is set to florence2"}),
+                "vision_model": (models, {"default": "none", "tooltip": "Select a local VLM for image captions, or 'none' for rule-based fallback"}),
             },
         }
 
@@ -48,8 +47,8 @@ class ComfyGotchiNode:
     FUNCTION = "process"
     CATEGORY = "ComfyGotchi"
 
-    def process(self, image, vision_model="none", florence2_model=None):
-        caption = caption_image(image, vision_model, florence2_model)
+    def process(self, image, vision_model="none"):
+        caption = caption_image(image, vision_model)
         state_dict = _get_state_dict()
         if state_dict is None:
             mood = "neutral"
