@@ -3,7 +3,6 @@ import { api } from "../../scripts/api.js";
 
 const TICK_INTERVAL_MS = 60000;
 const POLL_INTERVAL_MS = 2000;
-const SPRITE_SIZE = 128;
 
 const STAGE_COLORS = {
   egg: "#d4a574",
@@ -43,15 +42,15 @@ async function sendTick() {
 }
 
 function drawCreature(ctx, state) {
-  ctx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
   if (!state) {
     ctx.fillStyle = "#333";
     ctx.font = "12px sans-serif";
-    ctx.fillText("loading...", 30, 64);
+    ctx.fillText("loading...", 10, 40);
     return;
   }
-  const cx = SPRITE_SIZE / 2;
-  const cy = SPRITE_SIZE / 2;
+
+  const cx = 64;
+  const cy = 56;
   const color = STAGE_COLORS[state.stage] || "#5cb85c";
   const weightScale = 0.7 + (state.weight / 100) * 0.6;
   const radiusX = 30 * weightScale;
@@ -112,36 +111,35 @@ function drawCreature(ctx, state) {
     ctx.stroke();
   }
 
-  if (state.stage !== "egg" && state.stage !== "ghost") {
-    ctx.fillStyle = "#ff5555";
-    ctx.font = "10px sans-serif";
-    const hungerBar = `H:${Math.round(state.hunger)}`;
-    const happyBar = `J:${Math.round(state.happiness)}`;
-    ctx.fillText(hungerBar, 5, 12);
-    ctx.fillText(happyBar, 5, 24);
-    ctx.fillText(`🍱${state.stats?.total_images_eaten || 0}`, 5, 120);
-    if (state.evolution_tier > 0) {
-      ctx.fillStyle = "#9b59b6";
-      ctx.fillText(`T${state.evolution_tier}`, 100, 12);
-    }
-  }
   ctx.globalAlpha = 1.0;
+
+  ctx.fillStyle = "#ff5555";
+  ctx.font = "10px sans-serif";
+  ctx.fillText(`H:${Math.round(state.hunger)}`, 4, 12);
+  ctx.fillText(`J:${Math.round(state.happiness)}`, 4, 24);
+  const eaten = state.stats?.total_images_eaten || 0;
+  ctx.fillText(`eaten:${eaten}`, 4, 100);
+  if (state.evolution_tier > 0) {
+    ctx.fillStyle = "#9b59b6";
+    ctx.fillText(`T${state.evolution_tier}`, 90, 12);
+  }
 }
 
 app.registerExtension({
   name: "comfygotchi",
-  async nodeCreated(node) {
-    if (node.comfyClass !== "ComfyGotchiNode") return;
-    const widget = {
-      type: "comfygotchi_canvas",
-      name: "canvas",
-      draw(nodeCtx, x, y, w, h) {
-        const canvas = document.createElement("canvas");
-        drawCreature(canvas.getContext("2d"), lastState);
-        nodeCtx.drawImage(canvas, x, y, w, h);
-      },
+  async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    if (nodeData.name !== "ComfyGotchiNode") return;
+
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = function () {
+      const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
+      this.setSize([150, 130]);
+      this.onDrawBackground = function (ctx) {
+        if (this.flags.collapsed) return;
+        drawCreature(ctx, lastState);
+      };
+      return r;
     };
-    node.addWidget("comfygotchi_canvas", "canvas", "", widget);
   },
   async setup() {
     await fetchState();
