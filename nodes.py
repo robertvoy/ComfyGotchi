@@ -36,10 +36,10 @@ class ComfyGotchiNode:
         return {
             "required": {
                 "image": ("IMAGE",),
-                "vision_model": (models, {"default": models[0]}),
             },
             "optional": {
-                "florence2_model": ("FL2MODEL",),
+                "vision_model": (models, {"default": "none"}),
+                "florence2_model": ("FL2MODEL", {"tooltip": "Connect a Florence2 model loader here if vision_model is set to florence2"}),
             },
         }
 
