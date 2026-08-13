@@ -46,9 +46,16 @@ def _now_iso():
 class GotchiState:
     def __init__(self, data=None):
         d = DEFAULT_STATE.copy()
+        d["stats"] = DEFAULT_STATE["stats"].copy()
+        d["comment_history"] = list(DEFAULT_STATE["comment_history"])
         if data:
             d.update(data)
-            d.setdefault("stats", {}).update(DEFAULT_STATE["stats"].copy())
+            if "stats" in data:
+                merged = DEFAULT_STATE["stats"].copy()
+                merged.update(data["stats"])
+                d["stats"] = merged
+            if "comment_history" in data:
+                d["comment_history"] = list(data["comment_history"])
         for k, v in d.items():
             setattr(self, k, v)
         self._cfg = CONFIG
@@ -159,3 +166,29 @@ class GotchiState:
             self.mood = self.derive_mood()
             return True
         return False
+
+    def save(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        data = self.to_dict()
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, path)
+        except:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+
+    @classmethod
+    def load(cls, path):
+        if not os.path.exists(path):
+            return cls()
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+            return cls.from_dict(data)
+        except (json.JSONDecodeError, IOError):
+            return cls()
