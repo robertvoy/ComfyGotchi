@@ -47,7 +47,7 @@ class ComfyGotchiNode:
     FUNCTION = "process"
     CATEGORY = "ComfyGotchi"
 
-    def process(self, image, vision_model="none"):
+    def process(self, image, vision_model="none", **kwargs):
         caption = caption_image(image, vision_model)
         state_dict = _get_state_dict()
         if state_dict is None:
