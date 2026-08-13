@@ -1,0 +1,95 @@
+import os
+import json
+import threading
+from datetime import datetime, timezone
+
+from .state import GotchiState, CONFIG
+
+STATE_FILE = os.path.join(os.path.dirname(__file__), "state.json")
+_lock = threading.Lock()
+_state = None
+
+def _get_state():
+    global _state
+    if _state is None:
+        _state = GotchiState.load(STATE_FILE)
+    return _state
+
+def _save_state():
+    s = _get_state()
+    s.save(STATE_FILE)
+
+def _now():
+    return datetime.now(timezone.utc)
+
+def _apply_decay_on_read():
+    s = _get_state()
+    if s.last_decay_at and s.stage not in ("egg", "ghost"):
+        try:
+            last = datetime.fromisoformat(s.last_decay_at)
+            elapsed = (_now() - last).total_seconds() / 60.0
+            if elapsed > 0 and elapsed < (CONFIG.TICK_TIMEOUT_SEC / 60.0 + 5):
+                s.apply_tick(elapsed)
+            else:
+                s.last_decay_at = _now().isoformat()
+        except (ValueError, TypeError):
+            s.last_decay_at = _now().isoformat()
+    elif not s.last_decay_at:
+        s.last_decay_at = _now().isoformat()
+    _save_state()
+    return s
+
+def init_server(server_instance):
+    from server import PromptServer
+    from aiohttp import web
+
+    @server_instance.routes.get("/comfygotchi/state")
+    async def get_state(request):
+        with _lock:
+            s = _apply_decay_on_read()
+            return web.json_response(s.to_dict())
+
+    @server_instance.routes.post("/comfygotchi/event")
+    async def post_event(request):
+        body = await request.json()
+        event_type = body.get("type", "")
+        caption = body.get("caption", "")
+        with _lock:
+            s = _get_state()
+            if event_type == "feed":
+                s.apply_feed()
+            elif event_type == "love":
+                s.apply_love()
+            elif event_type == "tick":
+                elapsed = body.get("elapsed_minutes", 1.0)
+                s.apply_tick(elapsed)
+            elif event_type == "ghost_tick":
+                ghost_min = body.get("ghost_minutes", 0)
+                ghost_ev = body.get("ghost_events", 0)
+                s.check_reincarnation(ghost_min, ghost_ev)
+            s.last_event_at = _now().isoformat()
+            _save_state()
+            return web.json_response(s.to_dict())
+
+    @server_instance.routes.post("/comfygotchi/save")
+    async def post_save(request):
+        with _lock:
+            _save_state()
+            return web.json_response({"ok": True})
+
+    @server_instance.routes.get("/comfygotchi/config")
+    async def get_config(request):
+        return web.json_response({
+            "HATCH_THRESHOLD": CONFIG.HATCH_THRESHOLD,
+            "EVOLUTION_THRESHOLD": CONFIG.EVOLUTION_THRESHOLD,
+            "DELTA_FEED": CONFIG.DELTA_FEED,
+            "DELTA_LOVE": CONFIG.DELTA_LOVE,
+            "DELTA_HUNGER_PER_MIN": CONFIG.DELTA_HUNGER_PER_MIN,
+        })
+
+try:
+    from server import PromptServer
+    SERVER = PromptServer.instance
+    init_server(SERVER)
+except Exception as e:
+    print(f"[ComfyGotchi] Could not register server routes: {e}")
