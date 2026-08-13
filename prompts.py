@@ -24,7 +24,7 @@ TEMPLATES = {
         "miserable": ["Even in evolved form... hunger hurts. {c}...", "{c}... the void grows...", "*ancient stomach rumbles at the {c}*"],
     },
     "ghost": {
-        "dead": ["...", "boo.", "*floats silently*", "i was once alive...", "the {c} means nothing now..."],
+        "dead": ["...", "boo.", "*floats silently*", "i was once alive..."],
     },
 }
 
