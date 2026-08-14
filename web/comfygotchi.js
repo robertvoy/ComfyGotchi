@@ -35,9 +35,9 @@ let commentTimer = 0;
 let lastCommentHash = "";
 
 const BUTTONS = [
-  { x: 45, y: 270, r: 10, label: "PLAY", event: "play" },
-  { x: 110, y: 270, r: 10, label: "CLEAN", event: "clean" },
-  { x: 175, y: 270, r: 10, label: "MEDS", event: "medicine" },
+  { x: 45, y: 270, r: 12, label: "PLAY", emoji: "🎾", event: "play" },
+  { x: 110, y: 270, r: 12, label: "CLEAN", emoji: "🧹", event: "clean" },
+  { x: 175, y: 270, r: 12, label: "MEDS", emoji: "💊", event: "medicine" },
 ];
 
 async function fetchState() {
@@ -216,117 +216,180 @@ function drawPoop(ctx, cx, baseY, count) {
 
 function drawBlob(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 14 + Math.round(weight * 0.1);
-  const ry = 12;
+  const rx = 16 + Math.round(weight * 0.1);
+  const ry = 14;
   drawBodyBase(ctx, cx, cy + oy, rx, ry, PW, PL, tier);
+  // antenna
+  px(ctx, cx, cy + oy - ry - 5, 1, 5, PD);
+  px(ctx, cx - 1, cy + oy - ry - 6, 3, 1, PD);
   drawEyes(ctx, cx, cy + oy - 2, mood, 5);
   drawMouth(ctx, cx, cy + oy, mood, 4);
 }
 
 function drawCat(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 13 + Math.round(weight * 0.08);
-  const ry = 11;
+  const rx = 15 + Math.round(weight * 0.08);
+  const ry = 13;
   drawBodyBase(ctx, cx, cy + oy, rx, ry, PW, PL, tier);
-  px(ctx, cx - rx + 1, cy + oy - ry, 2, 5, PW);
-  px(ctx, cx - rx + 1, cy + oy - ry - 2, 3, 2, PW);
-  px(ctx, cx + rx - 3, cy + oy - ry, 2, 5, PW);
-  px(ctx, cx + rx - 3, cy + oy - ry - 2, 3, 2, PW);
-  px(ctx, cx - rx + 1, cy + oy - ry + 1, 1, 3, PD);
-  px(ctx, cx + rx - 1, cy + oy - ry + 1, 1, 3, PD);
+  // BIG pointy triangle ears
+  px(ctx, cx - rx + 1, cy + oy - ry + 2, 2, 8, PW);
+  px(ctx, cx - rx - 1, cy + oy - ry, 4, 6, PW);
+  px(ctx, cx - rx - 2, cy + oy - ry - 2, 5, 4, PW);
+  px(ctx, cx - rx - 1, cy + oy - ry - 4, 3, 2, PW);
+  px(ctx, cx + rx - 3, cy + oy - ry + 2, 2, 8, PW);
+  px(ctx, cx + rx - 1, cy + oy - ry, 4, 6, PW);
+  px(ctx, cx + rx - 2, cy + oy - ry - 2, 5, 4, PW);
+  px(ctx, cx + rx - 1, cy + oy - ry - 4, 3, 2, PW);
+  // inner ear pink
+  px(ctx, cx - rx, cy + oy - ry + 1, 2, 3, "#e8a0a0");
+  px(ctx, cx + rx - 1, cy + oy - ry + 1, 2, 3, "#e8a0a0");
+  // whiskers
+  px(ctx, cx - rx - 3, cy + oy + 2, 5, 1, PD);
+  px(ctx, cx + rx - 2, cy + oy + 2, 5, 1, PD);
+  px(ctx, cx - rx - 2, cy + oy + 4, 4, 1, PD);
+  px(ctx, cx + rx - 1, cy + oy + 4, 4, 1, PD);
   drawEyes(ctx, cx, cy + oy - 2, mood, 5);
-  px(ctx, cx - 1, cy + oy + 2, 2, 1, PD);
-  px(ctx, cx - 4, cy + oy + 3, 1, 1, PD);
-  px(ctx, cx + 3, cy + oy + 3, 1, 1, PD);
-  drawMouth(ctx, cx, cy + oy, mood, 3);
+  // pink nose
+  px(ctx, cx - 1, cy + oy + 2, 3, 1, "#e8a0a0");
+  px(ctx, cx, cy + oy + 3, 1, 1, "#e8a0a0");
+  drawMouth(ctx, cx, cy + oy + 2, mood, 3);
 }
 
 function drawDog(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 14 + Math.round(weight * 0.1);
-  const ry = 11;
+  const rx = 16 + Math.round(weight * 0.1);
+  const ry = 13;
   drawBodyBase(ctx, cx, cy + oy, rx, ry, PW, PL, tier);
-  px(ctx, cx - rx - 2, cy + oy - ry + 2, 3, 7, PW);
-  px(ctx, cx + rx, cy + oy - ry + 2, 3, 7, PW);
-  px(ctx, cx - rx - 2, cy + oy - ry + 2, 3, 2, PL);
-  px(ctx, cx + rx, cy + oy - ry + 2, 3, 2, PL);
-  px(ctx, cx - 3, cy + oy, 6, 4, PL);
-  px(ctx, cx - 1, cy + oy + 3, 2, 1, PD);
-  drawEyes(ctx, cx, cy + oy - 2, mood, 5);
-  drawMouth(ctx, cx, cy + oy + 4, mood, 3);
+  // BIG floppy ears hanging down on sides
+  px(ctx, cx - rx - 3, cy + oy - ry + 4, 4, 12, "#c9a878");
+  px(ctx, cx - rx - 4, cy + oy - ry + 6, 5, 10, "#c9a878");
+  px(ctx, cx - rx - 3, cy + oy - ry + 8, 4, 8, "#b89868");
+  px(ctx, cx + rx, cy + oy - ry + 4, 4, 12, "#c9a878");
+  px(ctx, cx + rx + 1, cy + oy - ry + 6, 5, 10, "#c9a878");
+  px(ctx, cx + rx, cy + oy - ry + 8, 4, 8, "#b89868");
+  // brown snout patch
+  px(ctx, cx - 4, cy + oy + 2, 9, 5, "#c9a878");
+  // black nose
+  px(ctx, cx - 1, cy + oy + 3, 3, 2, PD);
+  // tongue out if happy
+  if (mood === "happy" || mood === "ecstatic") {
+    px(ctx, cx - 1, cy + oy + 6, 3, 3, "#e85858");
+  }
+  drawEyes(ctx, cx, cy + oy - 3, mood, 5);
+  drawMouth(ctx, cx, cy + oy + 5, mood, 3);
 }
 
 function drawMonster(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 14 + Math.round(weight * 0.1);
-  const ry = 12;
-  drawBodyBase(ctx, cx, cy + oy, rx, ry, PW, PL, tier);
-  px(ctx, cx - rx + 2, cy + oy - ry - 1, 1, 4, PD);
-  px(ctx, cx - rx + 1, cy + oy - ry, 3, 1, PD);
-  px(ctx, cx + rx - 3, cy + oy - ry - 1, 1, 4, PD);
-  px(ctx, cx + rx - 3, cy + oy - ry, 3, 1, PD);
+  const rx = 16 + Math.round(weight * 0.1);
+  const ry = 14;
+  drawBodyBase(ctx, cx, cy + oy, rx, ry, "#9b7fc4", "#7c5fb8", tier);
+  // BIG horns
+  px(ctx, cx - rx + 2, cy + oy - ry - 1, 1, 6, PD);
+  px(ctx, cx - rx + 1, cy + oy - ry - 3, 3, 4, PD);
+  px(ctx, cx - rx, cy + oy - ry - 5, 2, 2, PD);
+  px(ctx, cx + rx - 3, cy + oy - ry - 1, 1, 6, PD);
+  px(ctx, cx + rx - 3, cy + oy - ry - 3, 3, 4, PD);
+  px(ctx, cx + rx - 2, cy + oy - ry - 5, 2, 2, PD);
+  // angry eyebrows
+  px(ctx, cx - 7, cy + oy - 5, 5, 1, PD);
+  px(ctx, cx - 8, cy + oy - 4, 3, 1, PD);
+  px(ctx, cx + 3, cy + oy - 5, 5, 1, PD);
+  px(ctx, cx + 6, cy + oy - 4, 3, 1, PD);
   drawEyes(ctx, cx, cy + oy - 2, mood, 5);
-  px(ctx, cx - 4, cy + oy + 3, 1, 2, PD);
-  px(ctx, cx - 2, cy + oy + 4, 1, 1, PD);
-  px(ctx, cx, cy + oy + 3, 1, 2, PD);
-  px(ctx, cx + 2, cy + oy + 4, 1, 1, PD);
-  px(ctx, cx + 4, cy + oy + 3, 1, 2, PD);
+  // sharp teeth row
+  px(ctx, cx - 6, cy + oy + 4, 2, 1, PW);
+  px(ctx, cx - 5, cy + oy + 5, 1, 1, PW);
+  px(ctx, cx - 3, cy + oy + 4, 2, 2, PW);
+  px(ctx, cx, cy + oy + 4, 2, 1, PW);
+  px(ctx, cx + 1, cy + oy + 5, 1, 1, PW);
+  px(ctx, cx + 3, cy + oy + 4, 2, 2, PW);
+  px(ctx, cx + 5, cy + oy + 5, 1, 1, PW);
 }
 
 function drawDragon(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 14 + Math.round(weight * 0.1);
-  const ry = 11;
-  drawBodyBase(ctx, cx, cy + oy, rx, ry, PW, PL, tier);
-  px(ctx, cx - rx - 4, cy + oy - 4, 4, 2, PW);
-  px(ctx, cx - rx - 4, cy + oy - 6, 2, 3, PW);
-  px(ctx, cx + rx + 1, cy + oy - 4, 4, 2, PW);
-  px(ctx, cx + rx + 3, cy + oy - 6, 2, 3, PW);
-  px(ctx, cx - rx + 2, cy + oy - ry - 1, 1, 4, PD);
-  px(ctx, cx + rx - 3, cy + oy - ry - 1, 1, 4, PD);
-  for (let i = 0; i < 5; i++) {
-    px(ctx, cx + rx - 1 + i * 2, cy + oy + ry, 1, 2, PD);
+  const rx = 16 + Math.round(weight * 0.1);
+  const ry = 12;
+  drawBodyBase(ctx, cx, cy + oy, rx, ry, "#7da870", "#5a8a3a", tier);
+  // BIG wings
+  px(ctx, cx - rx - 6, cy + oy - 5, 8, 3, "#5a8a3a");
+  px(ctx, cx - rx - 7, cy + oy - 7, 6, 3, "#5a8a3a");
+  px(ctx, cx - rx - 5, cy + oy - 9, 4, 3, "#5a8a3a");
+  px(ctx, cx + rx + 1, cy + oy - 5, 8, 3, "#5a8a3a");
+  px(ctx, cx + rx + 2, cy + oy - 7, 6, 3, "#5a8a3a");
+  px(ctx, cx + rx + 2, cy + oy - 9, 4, 3, "#5a8a3a");
+  // horns
+  px(ctx, cx - rx + 3, cy + oy - ry - 1, 1, 5, PD);
+  px(ctx, cx - rx + 2, cy + oy - ry - 3, 3, 3, PD);
+  px(ctx, cx + rx - 4, cy + oy - ry - 1, 1, 5, PD);
+  px(ctx, cx + rx - 4, cy + oy - ry - 3, 3, 3, PD);
+  // tail with spikes
+  px(ctx, cx + rx + 3, cy + oy + ry - 2, 6, 2, "#5a8a3a");
+  for (let i = 0; i < 4; i++) {
+    px(ctx, cx + rx + 4 + i * 2, cy + oy + ry - 4, 1, 2, PD);
   }
+  // scale texture
+  px(ctx, cx - 5, cy + oy - 2, 2, 1, "#4a7a2a");
+  px(ctx, cx + 3, cy + oy - 2, 2, 1, "#4a7a2a");
+  px(ctx, cx - 2, cy + oy + 3, 2, 1, "#4a7a2a");
   drawEyes(ctx, cx, cy + oy - 2, mood, 5);
-  drawMouth(ctx, cx, cy + oy, mood, 4);
+  // flame breath if ecstatic
+  if (mood === "ecstatic") {
+    px(ctx, cx - 3, cy + oy + 5, 7, 2, "#e85820");
+    px(ctx, cx - 2, cy + oy + 7, 5, 2, "#e8a020");
+  }
+  drawMouth(ctx, cx, cy + oy + 2, mood, 4);
 }
 
 function drawRobot(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rw = 16 + Math.round(weight * 0.1);
-  const rh = 14;
+  const rw = 18 + Math.round(weight * 0.1);
+  const rh = 15;
   const ex = cx;
   const ey = cy + oy;
+  // rectangular body
   for (let dy = -rh; dy <= rh; dy++) {
     for (let dx = -rw; dx <= rw; dx++) {
       if (Math.abs(dx) <= rw && Math.abs(dy) <= rh) {
-        let c = PW;
-        if (Math.abs(dx) > rw - 2 || Math.abs(dy) > rh - 2) c = PL;
-        if (tier > 0 && Math.abs(dx) < 4 && Math.abs(dy) < 4) c = PURPLE;
+        let c = "#b8b8c8";
+        if (Math.abs(dx) > rw - 2 || Math.abs(dy) > rh - 2) c = "#9090a0";
+        if (tier > 0 && Math.abs(dx) < 5 && Math.abs(dy) < 5) c = PURPLE;
         px(ctx, ex + dx, ey + dy, 1, 1, c);
       }
     }
   }
-  px(ctx, ex, ey - rh - 4, 1, 4, PD);
-  px(ctx, ex - 2, ey - rh - 5, 5, 1, PD);
-  px(ctx, ex, ey - rh - 6, 1, 1, RED);
+  // BIG antenna with blinking light
+  px(ctx, ex, ey - rh - 6, 1, 6, PD);
+  px(ctx, ex - 2, ey - rh - 7, 5, 1, PD);
+  const blink = Math.sin(animFrame * 0.15) > 0;
+  px(ctx, ex, ey - rh - 8, 1, 1, blink ? RED : "#602020");
+  // LED eyes (rectangular)
   if (mood === "sick" || mood === "grumpy" || mood === "miserable") {
-    px(ctx, ex - 5, ey - 2, 3, 1, RED);
-    px(ctx, ex + 3, ey - 2, 3, 1, RED);
+    px(ctx, ex - 7, ey - 3, 4, 2, RED);
+    px(ctx, ex + 3, ey - 3, 4, 2, RED);
   } else {
-    px(ctx, ex - 5, ey - 3, 3, 2, RED);
-    px(ctx, ex + 3, ey - 3, 3, 2, RED);
+    px(ctx, ex - 7, ey - 3, 4, 3, "#20e020");
+    px(ctx, ex + 3, ey - 3, 4, 3, "#20e020");
   }
-  px(ctx, ex - 3, ey + 3, 6, 1, PD);
+  // chest panel
+  px(ctx, ex - 4, ey + 3, 9, 6, "#404050");
+  px(ctx, ex - 3, ey + 4, 7, 1, "#20e020");
+  px(ctx, ex - 3, ey + 6, 3, 1, "#e0e020");
+  px(ctx, ex + 1, ey + 6, 3, 1, RED);
+  // side bolts
+  px(ctx, ex - rw - 1, ey - 2, 2, 4, "#606070");
+  px(ctx, ex + rw, ey - 2, 2, 4, "#606070");
 }
 
 function drawPhantom(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob * 0.5);
-  const rx = 13 + Math.round(weight * 0.08);
-  const ry = 12;
+  const rx = 15 + Math.round(weight * 0.08);
+  const ry = 14;
   const ex = cx;
   const ey = cy + oy;
-  ctx.globalAlpha = 0.75;
+  ctx.globalAlpha = 0.7;
+  // ghostly rounded top
   for (let dy = -ry; dy <= 0; dy++) {
     for (let dx = -rx; dx <= rx; dx++) {
       const dist = (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry);
@@ -338,14 +401,15 @@ function drawPhantom(ctx, cx, cy, mood, bob, weight, tier) {
       }
     }
   }
+  // wavy bottom
   const waveY = ey + 1;
   for (let dx = -rx; dx <= rx; dx++) {
-    const wave = Math.round(Math.sin((dx + animFrame * 0.1) * 0.5) * 2);
-    px(ctx, ex + dx, waveY + wave, 1, 6, PW);
+    const wave = Math.round(Math.sin((dx + animFrame * 0.1) * 0.5) * 3);
+    px(ctx, ex + dx, waveY + wave, 1, 8, PW);
   }
-  px(ctx, ex - rx, waveY + 4, 3, 3, PW);
-  px(ctx, ex - 3, waveY + 4, 3, 4, PW);
-  px(ctx, ex + 3, waveY + 4, 3, 3, PW);
+  px(ctx, ex - rx, waveY + 5, 4, 4, PW);
+  px(ctx, ex - 4, waveY + 5, 4, 5, PW);
+  px(ctx, ex + 1, waveY + 5, 4, 4, PW);
   ctx.globalAlpha = 1.0;
   drawEyes(ctx, ex, ey - 2, mood, 5);
   drawMouth(ctx, ex, ey, mood, 4);
@@ -353,52 +417,79 @@ function drawPhantom(ctx, cx, cy, mood, bob, weight, tier) {
 
 function drawAlien(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 11 + Math.round(weight * 0.08);
-  const ry = 13;
-  drawBodyBase(ctx, cx, cy + oy, rx, ry, PL, PM, tier);
-  px(ctx, cx, cy + oy - ry - 3, 1, 3, PM);
-  px(ctx, cx - 2, cy + oy - ry - 4, 5, 1, PM);
-  px(ctx, cx, cy + oy - ry - 5, 1, 1, PD);
-  drawEyes(ctx, cx, cy + oy - 2, mood, 5);
-  px(ctx, cx - 1, cy + oy + 2, 2, 1, PD);
-  drawMouth(ctx, cx, cy + oy + 4, mood, 2);
+  const rx = 13 + Math.round(weight * 0.08);
+  const ry = 15;
+  drawBodyBase(ctx, cx, cy + oy, rx, ry, "#7cc070", "#4a8a3a", tier);
+  // BIG antenna with glowing tip
+  px(ctx, cx, cy + oy - ry - 5, 1, 5, PM);
+  px(ctx, cx - 2, cy + oy - ry - 6, 5, 1, PM);
+  const glow = Math.sin(animFrame * 0.2) > 0;
+  px(ctx, cx, cy + oy - ry - 7, 1, 1, glow ? "#20e020" : "#4a8a3a");
+  // BIG almond eyes
+  px(ctx, cx - 6, cy + oy - 3, 4, 3, PD);
+  px(ctx, cx - 5, cy + oy - 2, 2, 1, PW);
+  px(ctx, cx + 3, cy + oy - 3, 4, 3, PD);
+  px(ctx, cx + 4, cy + oy - 2, 2, 1, PW);
+  // tiny mouth
+  px(ctx, cx - 1, cy + oy + 4, 3, 1, PD);
+  // arms
+  px(ctx, cx - rx - 2, cy + oy + 2, 3, 1, "#4a8a3a");
+  px(ctx, cx + rx, cy + oy + 2, 3, 1, "#4a8a3a");
 }
 
 function drawBunny(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 12 + Math.round(weight * 0.08);
-  const ry = 11;
+  const rx = 14 + Math.round(weight * 0.08);
+  const ry = 12;
   drawBodyBase(ctx, cx, cy + oy, rx, ry, PW, PL, tier);
-  px(ctx, cx - 6, cy + oy - ry - 8, 3, 10, PW);
-  px(ctx, cx + 4, cy + oy - ry - 8, 3, 10, PW);
-  px(ctx, cx - 5, cy + oy - ry - 6, 1, 6, PL);
-  px(ctx, cx + 5, cy + oy - ry - 6, 1, 6, PL);
+  // VERY long ears
+  px(ctx, cx - 7, cy + oy - ry - 12, 4, 14, PW);
+  px(ctx, cx - 6, cy + oy - ry - 10, 2, 10, "#e8a0a0");
+  px(ctx, cx + 4, cy + oy - ry - 12, 4, 14, PW);
+  px(ctx, cx + 5, cy + oy - ry - 10, 2, 10, "#e8a0a0");
+  // ear twitch
+  const twitch = Math.sin(animFrame * 0.08) > 0.5 ? 1 : 0;
+  px(ctx, cx + 4 + twitch, cy + oy - ry - 12, 4, 2, PW);
   drawEyes(ctx, cx, cy + oy - 2, mood, 4);
-  px(ctx, cx - 1, cy + oy + 2, 2, 1, PD);
+  // pink nose
+  px(ctx, cx - 1, cy + oy + 2, 3, 1, "#e8a0a0");
   drawMouth(ctx, cx, cy + oy + 4, mood, 2);
-  px(ctx, cx - 8, cy + oy + 6, 2, 1, PD);
-  px(ctx, cx + 7, cy + oy + 6, 2, 1, PD);
+  // buck teeth
+  px(ctx, cx - 1, cy + oy + 5, 1, 2, PW);
+  px(ctx, cx, cy + oy + 5, 1, 2, PW);
+  // feet
+  px(ctx, cx - 9, cy + oy + ry - 1, 4, 2, PW);
+  px(ctx, cx + 6, cy + oy + ry - 1, 4, 2, PW);
 }
 
 function drawPenguin(ctx, cx, cy, mood, bob, weight, tier) {
   const oy = Math.round(bob);
-  const rx = 13 + Math.round(weight * 0.1);
-  const ry = 13;
+  const rx = 15 + Math.round(weight * 0.1);
+  const ry = 15;
   drawBodyBase(ctx, cx, cy + oy, rx, ry, PD, PD, 0);
-  for (let dy = -8; dy <= 6; dy++) {
-    for (let dx = -7; dx <= 7; dx++) {
-      if (Math.abs(dx) + Math.abs(dy) < 10) {
+  // white belly
+  for (let dy = -10; dy <= 8; dy++) {
+    for (let dx = -9; dx <= 9; dx++) {
+      if (Math.abs(dx) + Math.abs(dy) < 13) {
         px(ctx, cx + dx, cy + oy + dy, 1, 1, PW);
       }
     }
   }
   if (tier > 0) {
-    px(ctx, cx, cy + oy - 2, 3, 3, PURPLE);
+    px(ctx, cx, cy + oy - 2, 4, 4, PURPLE);
   }
   drawEyes(ctx, cx, cy + oy - 5, mood, 4);
-  px(ctx, cx - 2, cy + oy - 2, 4, 2, RED);
-  px(ctx, cx - 4, cy + oy + 6, 3, 2, RED);
-  px(ctx, cx + 2, cy + oy + 6, 3, 2, RED);
+  // BIG orange beak
+  px(ctx, cx - 3, cy + oy - 1, 7, 3, "#e8a020");
+  px(ctx, cx - 2, cy + oy + 1, 5, 1, "#c88010");
+  // orange feet
+  px(ctx, cx - 7, cy + oy + ry, 4, 2, "#e8a020");
+  px(ctx, cx + 4, cy + oy + ry, 4, 2, "#e8a020");
+  px(ctx, cx - 6, cy + oy + ry + 1, 2, 1, "#e8a020");
+  px(ctx, cx + 5, cy + oy + ry + 1, 2, 1, "#e8a020");
+  // flippers
+  px(ctx, cx - rx - 1, cy + oy + 2, 3, 6, PD);
+  px(ctx, cx + rx - 2, cy + oy + 2, 3, 6, PD);
 }
 
 function drawGhost(ctx, cx, cy, bob) {
@@ -609,11 +700,13 @@ function drawCreature(ctx, state) {
     ctx.strokeStyle = SHELL_DARK;
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.fillStyle = PD;
-    ctx.font = "6px monospace";
+    ctx.font = "10px serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(btn.label, btn.x, btn.y);
+    ctx.fillText(btn.emoji, btn.x, btn.y - 1);
+    ctx.fillStyle = PD;
+    ctx.font = "5px monospace";
+    ctx.fillText(btn.label, btn.x, btn.y + 7);
     ctx.textAlign = "left";
   }
 }
