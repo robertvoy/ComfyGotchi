@@ -8,7 +8,7 @@ import tempfile
 class TunableConfig:
     HATCH_THRESHOLD: int = 10
     N_FEEDS_GROWUP: int = 3
-    EVOLUTION_THRESHOLD: int = 5000
+    EVOLUTION_THRESHOLD: int = 50
     DELTA_FEED: float = 15.0
     DELTA_LOVE: float = 10.0
     DELTA_HUNGER_PER_MIN: float = 0.2

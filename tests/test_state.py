@@ -80,12 +80,12 @@ def test_reincarnation_after_ghost_threshold():
     assert reincarnated is True
     assert s.stage == "egg"
 
-def test_evolution_at_5000_images():
+def test_evolution_at_50_images():
     s = GotchiState()
     for _ in range(10):
         s.apply_feed()
     s.stage = "adult"
-    s.stats["total_images_eaten"] = 4999
+    s.stats["total_images_eaten"] = 49
     s.apply_feed()
     assert s.evolution_tier == 1
     assert s.stage == "evolved"
