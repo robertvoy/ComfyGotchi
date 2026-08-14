@@ -1,12 +1,10 @@
 import os
 import json
+import random
 import urllib.request
 
-from .vision import detect_vision_models, caption_image, _rule_based_caption
+from .vision import detect_qwen_models, caption_image, determine_variant
 from .prompts import generate_comment
-from .state import GotchiState, CONFIG
-
-_STATE_PATH = os.path.join(os.path.dirname(__file__), "state.json")
 
 def _post_event(event_type, caption=""):
     try:
@@ -29,16 +27,30 @@ def _get_state_dict():
     except Exception:
         return None
 
+def _post_variant_update(variant, personality):
+    try:
+        data = json.dumps({"type": "set_variant", "variant": variant, "personality": personality}).encode("utf-8")
+        req = urllib.request.Request(
+            "http://127.0.0.1:8188/comfygotchi/event",
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        urllib.request.urlopen(req, timeout=10)
+    except Exception as e:
+        print(f"[ComfyGotchi] Failed to POST variant update: {e}")
+
 class ComfyGotchiNode:
     @classmethod
     def INPUT_TYPES(s):
-        models = detect_vision_models()
+        models = detect_qwen_models()
         return {
             "required": {
                 "image": ("IMAGE",),
             },
             "optional": {
-                "vision_model": (models, {"default": "none", "tooltip": "Select a local VLM for image captions, or 'none' for rule-based fallback"}),
+                "qwen_model": (models, {"default": models[0], "tooltip": "Select a Qwen-VL model from models/LLM/Qwen-VL/, or 'none (rule-based)' for fallback"}),
+                "keep_model_loaded": ("BOOLEAN", {"default": True, "tooltip": "Keep Qwen model in VRAM between calls"}),
             },
         }
 
@@ -47,19 +59,57 @@ class ComfyGotchiNode:
     FUNCTION = "process"
     CATEGORY = "ComfyGotchi"
 
-    def process(self, image, vision_model="none", **kwargs):
-        caption = caption_image(image, vision_model)
+    def process(self, image, qwen_model="none (rule-based)", keep_model_loaded=True, **kwargs):
         state_dict = _get_state_dict()
+        
         if state_dict is None:
-            mood = "neutral"
-            stage = "adult"
+            stage = "egg"
+            mood = "incubating"
             tier = 0
+            variant = "blob"
+            personality = ""
+            incubation_progress = 0
+            egg_captions = []
+            variant_determined = False
         else:
-            mood = state_dict.get("mood", "neutral")
             stage = state_dict.get("stage", "egg")
+            mood = state_dict.get("mood", "neutral")
             tier = state_dict.get("evolution_tier", 0)
-        comment = generate_comment(mood, stage, tier, caption)
-        _post_event("feed", caption)
+            variant = state_dict.get("variant", "blob")
+            personality = state_dict.get("personality", "")
+            incubation_progress = state_dict.get("incubation_progress", 0)
+            egg_captions = state_dict.get("egg_captions", [])
+            variant_determined = state_dict.get("variant_determined", False)
+
+        comment = ""
+        caption = ""
+
+        if stage == "egg":
+            caption = caption_image(image, qwen_model, keep_model_loaded)
+            
+            egg_captions.append(caption)
+            _post_event("egg_caption", caption)
+            
+            if len(egg_captions) >= 10 and not variant_determined:
+                variant, personality = determine_variant(egg_captions, qwen_model, keep_model_loaded)
+                _post_variant_update(variant, personality)
+            
+            _post_event("feed", caption)
+            comment = ""
+
+        elif stage == "ghost":
+            _post_event("feed", "")
+            comment = generate_comment("dead", "ghost", tier, None, personality, variant)
+
+        else:
+            _post_event("feed", "")
+            
+            if random.random() < 0.25:
+                caption = caption_image(image, qwen_model, keep_model_loaded)
+                comment = generate_comment(mood, stage, tier, caption, personality, variant)
+            else:
+                comment = generate_comment(mood, stage, tier, None, personality, variant)
+
         return (image, comment)
 
 NODE_CLASS_MAPPINGS = {

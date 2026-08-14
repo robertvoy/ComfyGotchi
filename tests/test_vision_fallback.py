@@ -1,7 +1,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import numpy as np
-from vision import caption_image, detect_vision_models, _rule_based_caption
+from vision import caption_image, detect_qwen_models, _rule_based_caption, determine_variant
 
 def test_rule_based_caption_dark_image():
     img = np.zeros((1, 64, 64, 3), dtype=np.float32)
@@ -15,9 +15,19 @@ def test_rule_based_caption_bright_image():
 
 def test_caption_image_with_none_model_returns_fallback():
     img = np.zeros((1, 64, 64, 3), dtype=np.float32)
-    c = caption_image(img, "none")
+    c = caption_image(img, "none (rule-based)")
     assert len(c) > 0
 
-def test_detect_vision_models_returns_list():
-    models = detect_vision_models()
+def test_detect_qwen_models_returns_list():
+    models = detect_qwen_models()
     assert isinstance(models, list)
+    assert "none (rule-based)" in models
+
+def test_determine_variant_no_model_returns_blob():
+    v, p = determine_variant(["a cat", "a dog"], "none (rule-based)")
+    assert v == "blob"
+    assert p == ""
+
+def test_determine_variant_empty_captions_returns_blob():
+    v, p = determine_variant([], "none (rule-based)")
+    assert v == "blob"

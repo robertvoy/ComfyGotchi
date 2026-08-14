@@ -1,6 +1,26 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
+let apiNodeTypes = null;
+
+async function loadApiNodeTypes() {
+  try {
+    const r = await fetch("/object_info");
+    const defs = await r.json();
+    const types = new Set();
+    for (const [name, def] of Object.entries(defs)) {
+      if (def.api_node === true) {
+        types.add(name);
+      }
+    }
+    apiNodeTypes = types;
+    console.log(`[ComfyGotchi] Loaded ${types.size} API node types for love detection`);
+  } catch (e) {
+    console.warn("[ComfyGotchi] Failed to load object_info for love detection", e);
+    apiNodeTypes = null;
+  }
+}
+
 async function sendLove() {
   try {
     await fetch("/comfygotchi/event", {
@@ -13,23 +33,39 @@ async function sendLove() {
   }
 }
 
-function isApiNode(nodeType) {
-  if (!nodeType) return false;
-  const defs = window.comfyAPI?.nodeDefs || {};
-  const def = defs[nodeType];
-  if (def && def.api_node === true) return true;
-  if (def && def.python_module && def.python_module.startsWith("comfy_api_nodes")) return true;
-  return false;
+function checkNodeAndSendLove(nodeId) {
+  if (apiNodeTypes === null || apiNodeTypes.size === 0) return;
+  const node = app.graph?._nodes_by_id?.[nodeId];
+  if (!node) return;
+  if (apiNodeTypes.has(node.type)) {
+    sendLove();
+  }
 }
 
 app.registerExtension({
   name: "comfygotchi_listener",
   async setup() {
+    await loadApiNodeTypes();
+    
+    setInterval(() => {
+      if (apiNodeTypes === null) {
+        loadApiNodeTypes();
+      }
+    }, 30000);
+    
     api.addEventListener("executed", (evt) => {
       const detail = evt.detail || {};
-      const nodeType = detail.class_type || detail.type || detail.node_type;
-      if (isApiNode(nodeType)) {
-        sendLove();
+      const nodeId = detail.node || detail.display_node;
+      if (nodeId) {
+        checkNodeAndSendLove(String(nodeId));
+      }
+    });
+    
+    api.addEventListener("executing", (evt) => {
+      const detail = evt.detail || {};
+      const nodeId = detail.node;
+      if (nodeId) {
+        checkNodeAndSendLove(String(nodeId));
       }
     });
   },

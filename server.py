@@ -67,6 +67,15 @@ def init_server(server_instance):
                 ghost_min = body.get("ghost_minutes", 0)
                 ghost_ev = body.get("ghost_events", 0)
                 s.check_reincarnation(ghost_min, ghost_ev)
+            elif event_type == "egg_caption":
+                if hasattr(s, "egg_captions") and caption:
+                    s.egg_captions.append(caption)
+            elif event_type == "set_variant":
+                v = body.get("variant", "blob")
+                p = body.get("personality", "")
+                s.variant = v
+                s.personality = p
+                s.variant_determined = True
             s.last_event_at = _now().isoformat()
             _save_state()
             return web.json_response(s.to_dict())

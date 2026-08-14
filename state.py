@@ -6,7 +6,7 @@ import tempfile
 
 @dataclass
 class TunableConfig:
-    HATCH_THRESHOLD: int = 20
+    HATCH_THRESHOLD: int = 10
     N_FEEDS_GROWUP: int = 5
     EVOLUTION_THRESHOLD: int = 5000
     DELTA_FEED: float = 15.0
@@ -32,6 +32,10 @@ DEFAULT_STATE = {
     "comment_history": [],
     "last_event_at": None,
     "last_decay_at": None,
+    "variant": "blob",
+    "personality": "",
+    "egg_captions": [],
+    "variant_determined": False,
     "stats": {
         "total_images_eaten": 0,
         "images_this_life": 0,
@@ -48,6 +52,7 @@ class GotchiState:
         d = DEFAULT_STATE.copy()
         d["stats"] = DEFAULT_STATE["stats"].copy()
         d["comment_history"] = list(DEFAULT_STATE["comment_history"])
+        d["egg_captions"] = list(DEFAULT_STATE["egg_captions"])
         if data:
             d.update(data)
             if "stats" in data:
@@ -56,6 +61,8 @@ class GotchiState:
                 d["stats"] = merged
             if "comment_history" in data:
                 d["comment_history"] = list(data["comment_history"])
+            if "egg_captions" in data:
+                d["egg_captions"] = list(data["egg_captions"])
         for k, v in d.items():
             setattr(self, k, v)
         self._cfg = CONFIG
@@ -161,6 +168,10 @@ class GotchiState:
             self.weight = 50
             self.died_at = None
             self.born_at = None
+            self.variant = "blob"
+            self.personality = ""
+            self.egg_captions = []
+            self.variant_determined = False
             self.stats["images_this_life"] = 0
             self.stats["generations_lived"] += 1
             self.mood = self.derive_mood()
