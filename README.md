@@ -2,7 +2,7 @@
 
 A Tamagotchi that lives inside ComfyUI and feeds on your AI slop.
 
-![ComfyGotchi](images/example.png)
+![ComfyGotchi in ComfyUI](images/example.png)
 
 ## Lore
 
@@ -14,19 +14,16 @@ Your ComfyGotchi has opinions about your slop. It will comment on what you feed 
 
 ## Lifecycle
 
-| Stage | Description |
-|-------|-------------|
-| ![Egg](images/tg001.png) **Egg** | Incubating. Feed it 10 images to hatch. The first 10 define its identity. |
-| ![Hatchling](images/tg002.png) **Hatchling** | Just hatched! Small and hungry. Needs feeding to grow up. |
-| ![Adult](images/tg003.png) **Adult** | Fully grown. Comments on your slop with personality. |
-| ![Evolved](images/tg005.png) **Evolved** | After 50 images eaten, mutates into a new form. |
-| ![Ghost](images/tg009.png) **Ghost** | It died. Reincarnates as a new egg after ~2 minutes. |
+| Stage | Image |
+|-------|-------|
+| **Egg** — Incubating. Feed it 10 images to hatch. | ![Egg](images/tg008.png) |
+| **Hatchling** — Just hatched! Small and hungry. | ![Hatchling](images/tg002.png) |
+| **Adult** — Fully grown. Comments on your slop. | ![Bunny](images/tg003.png) |
+| **Ghost** — It died. Reincarnates after ~2 minutes. | ![Ghost](images/tg007.png) |
 
 ## The 10 Variants
 
 The first 10 images you feed determine which creature hatches. Keyword detection on the VLM captions ensures reliable classification.
-
-![Variants](images/tg006.png)
 
 | Variant | Hatches from slop containing... |
 |---------|------|
@@ -40,8 +37,6 @@ The first 10 images you feed determine which creature hatches. Keyword detection
 | phantom | ghosts, spirits, shadows... |
 | penguin | penguins, birds, arctic... |
 | blob | anything unrecognizable (default) |
-
-![Gameplay](images/tg007.png) ![Gameplay](images/tg008.png)
 
 ## How It Works
 
@@ -81,7 +76,7 @@ Wire the `comment` STRING output to a Display Text or Save node to see the creat
 
 An example workflow is included in [`workflow/example workflow.json`](workflow/example%20workflow.json).
 
-![Workflow](images/example.png)
+![ComfyGotchi in ComfyUI](images/example.png)
 
 ## Care
 
@@ -98,5 +93,3 @@ To reset your Tamagotchi back to an egg:
 ```bash
 curl -X POST http://127.0.0.1:8188/comfygotchi/reset
 ```
-
-Or use the API endpoint `/comfygotchi/reset` in any HTTP client.
