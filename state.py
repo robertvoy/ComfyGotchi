@@ -23,8 +23,8 @@ class TunableConfig:
     SICKNESS_DEATH_THRESHOLD: float = 100.0
     AGE_MAX_MINUTES: int = 10080
     AGE_MIN_MINUTES: int = 1440
-    T_GHOST_MIN: int = 10
-    GHOST_EVENT_THRESHOLD: int = 10
+    T_GHOST_MIN: int = 2
+    GHOST_EVENT_THRESHOLD: int = 3
     TICK_TIMEOUT_SEC: int = 120
     CATCHUP_DECAY_MAX_MIN: int = 30
     POOP_MAX: int = 5

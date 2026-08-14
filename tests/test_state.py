@@ -76,7 +76,7 @@ def test_reincarnation_after_ghost_threshold():
     s.hunger = 100
     s.apply_tick(10)
     assert s.stage == "ghost"
-    reincarnated = s.check_reincarnation(31, 0)
+    reincarnated = s.check_reincarnation(3, 0)
     assert reincarnated is True
     assert s.stage == "egg"
 
@@ -97,7 +97,7 @@ def test_evolution_tier_survives_death():
     s.hunger = 100
     s.apply_tick(10)
     assert s.stage == "ghost"
-    s.check_reincarnation(31, 0)
+    s.check_reincarnation(3, 0)
     assert s.stage == "egg"
     assert s.evolution_tier == 2
 

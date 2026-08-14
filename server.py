@@ -91,6 +91,13 @@ def init_server(server_instance):
             elif event_type == "tick":
                 elapsed = body.get("elapsed_minutes", 1.0)
                 s.apply_tick(elapsed)
+                if s.stage == "ghost" and s.died_at:
+                    try:
+                        died = datetime.fromisoformat(s.died_at)
+                        ghost_min = (_now() - died).total_seconds() / 60.0
+                        s.check_reincarnation(ghost_min, 0)
+                    except (ValueError, TypeError):
+                        pass
             elif event_type == "ghost_tick":
                 ghost_min = body.get("ghost_minutes", 0)
                 ghost_ev = body.get("ghost_events", 0)
