@@ -76,6 +76,12 @@ def init_server(server_instance):
                 s.variant = v
                 s.personality = p
                 s.variant_determined = True
+            elif event_type == "play":
+                s.apply_play()
+            elif event_type == "clean":
+                s.apply_clean()
+            elif event_type == "medicine":
+                s.apply_medicine()
             s.last_event_at = _now().isoformat()
             _save_state()
             return web.json_response(s.to_dict())

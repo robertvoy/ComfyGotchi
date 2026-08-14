@@ -79,6 +79,7 @@ GENERIC_TEMPLATES = {
 }
 
 GHOST_LINES = ["...", "boo.", "*floats silently*", "i was once alive...", "the void calls"]
+SICK_LINES = ["*cough*", "i don't feel so good...", "*sneezes*", "ugh... my stomach...", "*wobbles weakly*"]
 EGG_LINES = [""]
 
 def _get_tone(personality):
@@ -95,6 +96,8 @@ def generate_comment(mood, stage, evolution_tier, caption, personality="", varia
         return ""
     if stage == "ghost":
         return random.choice(GHOST_LINES)
+    if mood == "sick":
+        return random.choice(SICK_LINES)
     
     tone = _get_tone(personality)
     tonal = TONAL_TEMPLATES.get(tone, TONAL_TEMPLATES["snarky"])

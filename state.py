@@ -7,15 +7,28 @@ import tempfile
 @dataclass
 class TunableConfig:
     HATCH_THRESHOLD: int = 10
-    N_FEEDS_GROWUP: int = 5
+    N_FEEDS_GROWUP: int = 3
     EVOLUTION_THRESHOLD: int = 5000
     DELTA_FEED: float = 15.0
     DELTA_LOVE: float = 10.0
-    DELTA_HUNGER_PER_MIN: float = 0.5
-    DELTA_HAPPINESS_DECAY_PER_MIN: float = 0.2
-    T_GHOST_MIN: int = 30
-    GHOST_EVENT_THRESHOLD: int = 20
+    DELTA_HUNGER_PER_MIN: float = 1.5
+    DELTA_HAPPINESS_DECAY_PER_MIN: float = 0.5
+    DELTA_BOREDOM_PER_MIN: float = 0.8
+    DELTA_POOP_CHANCE: float = 0.15
+    DELTA_HYGIENE_DECAY_PER_MIN: float = 0.3
+    DELTA_SICKNESS_FROM_POOP: float = 2.0
+    DELTA_SICKNESS_FROM_BOREDOM: float = 1.0
+    DELTA_SICKNESS_FROM_HUNGER: float = 1.5
+    DELTA_SICKNESS_FROM_AGE: float = 0.5
+    SICKNESS_DEATH_THRESHOLD: float = 100.0
+    AGE_MAX_MINUTES: int = 120
+    T_GHOST_MIN: int = 10
+    GHOST_EVENT_THRESHOLD: int = 10
     TICK_TIMEOUT_SEC: int = 120
+    POOP_MAX: int = 5
+    PLAY_HAPPINESS_BOOST: float = 15.0
+    CLEAN_HYGIENE_BOOST: float = 80.0
+    MEDICINE_SICKNESS_RESET: float = 0.0
 
 CONFIG = TunableConfig()
 
@@ -36,6 +49,11 @@ DEFAULT_STATE = {
     "personality": "",
     "egg_captions": [],
     "variant_determined": False,
+    "poop": 0,
+    "hygiene": 100,
+    "sickness": 0,
+    "boredom": 0,
+    "age_minutes": 0,
     "stats": {
         "total_images_eaten": 0,
         "images_this_life": 0,
@@ -80,6 +98,8 @@ class GotchiState:
             return "dead"
         if self.stage == "egg":
             return "incubating"
+        if self.sickness >= 60:
+            return "sick"
         h = self.hunger
         j = self.happiness
         if h >= 80:
@@ -90,6 +110,8 @@ class GotchiState:
             return "ecstatic"
         if j >= 60:
             return "happy"
+        if self.boredom >= 70:
+            return "grumpy"
         return "neutral"
 
     def apply_feed(self):
@@ -108,6 +130,12 @@ class GotchiState:
         self.hunger = max(0, self.hunger - self._cfg.DELTA_FEED)
         self.happiness = min(100, self.happiness + self._cfg.DELTA_FEED * 0.3)
         self.weight = min(100, self.weight + self._cfg.DELTA_FEED * 0.2)
+        if self.weight > 90:
+            self.sickness = min(100, self.sickness + 1)
+        import random as _r
+        if _r.random() < self._cfg.DELTA_POOP_CHANCE:
+            self.poop = min(self._cfg.POOP_MAX, self.poop + 1)
+        self._check_growup()
         self._check_evolution()
         self._check_death()
         self.mood = self.derive_mood()
@@ -119,6 +147,36 @@ class GotchiState:
             self.mood = self.derive_mood()
             return
         self.happiness = min(100, self.happiness + self._cfg.DELTA_LOVE)
+        self.boredom = max(0, self.boredom - 5)
+        self.mood = self.derive_mood()
+
+    def apply_play(self):
+        self.last_event_at = _now_iso()
+        if self.stage in ("egg", "ghost"):
+            self.mood = self.derive_mood()
+            return
+        self.happiness = min(100, self.happiness + self._cfg.PLAY_HAPPINESS_BOOST)
+        self.boredom = max(0, self.boredom - 30)
+        self.hunger = min(100, self.hunger + 3)
+        self.mood = self.derive_mood()
+
+    def apply_clean(self):
+        self.last_event_at = _now_iso()
+        if self.stage in ("egg", "ghost"):
+            self.mood = self.derive_mood()
+            return
+        self.poop = 0
+        self.hygiene = min(100, self.hygiene + self._cfg.CLEAN_HYGIENE_BOOST)
+        self.happiness = min(100, self.happiness + 5)
+        self.mood = self.derive_mood()
+
+    def apply_medicine(self):
+        self.last_event_at = _now_iso()
+        if self.stage in ("egg", "ghost"):
+            self.mood = self.derive_mood()
+            return
+        self.sickness = self._cfg.MEDICINE_SICKNESS_RESET
+        self.happiness = max(0, self.happiness - 10)
         self.mood = self.derive_mood()
 
     def apply_tick(self, elapsed_minutes):
@@ -126,8 +184,21 @@ class GotchiState:
         if self.stage in ("egg", "ghost"):
             self.last_decay_at = _now_iso()
             return
-        self.hunger = min(100, self.hunger + self._cfg.DELTA_HUNGER_PER_MIN * elapsed_minutes)
-        self.happiness = max(0, self.happiness - self._cfg.DELTA_HAPPINESS_DECAY_PER_MIN * elapsed_minutes)
+        em = elapsed_minutes
+        self.hunger = min(100, self.hunger + self._cfg.DELTA_HUNGER_PER_MIN * em)
+        self.happiness = max(0, self.happiness - self._cfg.DELTA_HAPPINESS_DECAY_PER_MIN * em)
+        self.boredom = min(100, self.boredom + self._cfg.DELTA_BOREDOM_PER_MIN * em)
+        self.hygiene = max(0, self.hygiene - self._cfg.DELTA_HYGIENE_DECAY_PER_MIN * em)
+        self.age_minutes += em
+        if self.poop > 0:
+            self.sickness = min(100, self.sickness + self._cfg.DELTA_SICKNESS_FROM_POOP * em * (self.poop / self._cfg.POOP_MAX))
+        if self.boredom > 50:
+            self.sickness = min(100, self.sickness + self._cfg.DELTA_SICKNESS_FROM_BOREDOM * em)
+        if self.hunger > 80:
+            self.sickness = min(100, self.sickness + self._cfg.DELTA_SICKNESS_FROM_HUNGER * em)
+        if self.age_minutes > self._cfg.AGE_MAX_MINUTES * 0.7:
+            age_factor = (self.age_minutes - self._cfg.AGE_MAX_MINUTES * 0.7) / (self._cfg.AGE_MAX_MINUTES * 0.3)
+            self.sickness = min(100, self.sickness + self._cfg.DELTA_SICKNESS_FROM_AGE * em * age_factor)
         self.last_decay_at = _now_iso()
         self._check_death()
         self.mood = self.derive_mood()
@@ -139,9 +210,14 @@ class GotchiState:
         self.happiness = 60
         self.weight = 40
         self.incubation_progress = 0
+        self.poop = 0
+        self.hygiene = 100
+        self.sickness = 0
+        self.boredom = 0
+        self.age_minutes = 0
 
-    def _check_growup(self, feeds_as_hatchling):
-        if self.stage == "hatchling" and feeds_as_hatchling >= self._cfg.N_FEEDS_GROWUP:
+    def _check_growup(self):
+        if self.stage == "hatchling" and self.stats["images_this_life"] >= self._cfg.HATCH_THRESHOLD + self._cfg.N_FEEDS_GROWUP:
             self.stage = "adult"
 
     def _check_evolution(self):
@@ -152,7 +228,19 @@ class GotchiState:
                 self.stage = "evolved"
 
     def _check_death(self):
-        if self.hunger >= 100 and self.stage != "ghost":
+        if self.stage == "ghost":
+            return
+        if self.sickness >= self._cfg.SICKNESS_DEATH_THRESHOLD:
+            self.stage = "ghost"
+            self.died_at = _now_iso()
+            self.mood = "dead"
+            return
+        if self.hunger >= 100:
+            self.stage = "ghost"
+            self.died_at = _now_iso()
+            self.mood = "dead"
+            return
+        if self.age_minutes >= self._cfg.AGE_MAX_MINUTES:
             self.stage = "ghost"
             self.died_at = _now_iso()
             self.mood = "dead"
@@ -172,6 +260,11 @@ class GotchiState:
             self.personality = ""
             self.egg_captions = []
             self.variant_determined = False
+            self.poop = 0
+            self.hygiene = 100
+            self.sickness = 0
+            self.boredom = 0
+            self.age_minutes = 0
             self.stats["images_this_life"] = 0
             self.stats["generations_lived"] += 1
             self.mood = self.derive_mood()
