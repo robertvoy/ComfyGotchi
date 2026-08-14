@@ -2,6 +2,8 @@
 
 A Tamagotchi that lives inside ComfyUI and feeds on your AI slop.
 
+![ComfyGotchi](images/example.png)
+
 ## Lore
 
 In the murky depths of your GPU, a tiny creature stirs inside its egg. It doesn't eat pixels — it eats **AI slop**. Every generated image you pipe through ComfyUI is devoured by your ComfyGotchi. The first 10 images you feed it during incubation **define what it becomes**: a dog? a dragon? a robot? The aesthetic of your slop imprints on its personality forever.
@@ -10,30 +12,21 @@ Feed it well and it grows. Neglect it and it gets hungry, bored, sick, and event
 
 Your ComfyGotchi has opinions about your slop. It will comment on what you feed it, with attitude shaped by the aesthetic of those first 10 incubation images. Dark and moody slop produces a snarky creature. Bright and colorful slop produces a cheerful one.
 
-## How It Works
+## Lifecycle
 
-- **Feeds on AI slop** — pipe an IMAGE (your generations) through the ComfyGotchiNode. The creature eats and a local VLM (Qwen3-VL) generates a comment.
-- **First 10 images = identity** — the first 10 images fed during the egg phase determine the creature's variant (dog, cat, dragon, robot, phantom, alien, bunny, penguin, monster, or blob) and personality tone. Keyword-based detection on the VLM captions ensures reliable classification.
-- **Feels love** — when a ComfyUI partner API node executes, the creature's happiness rises.
-- **Gets hungry over time** — hunger, boredom, hygiene decay passively while ComfyUI runs.
-- **Poops** — yes. Clean it up or it gets sick.
-- **Evolves** — after every 5000 images eaten cumulatively, the creature mutates into a new form.
-- **Dies and reincarnates** — if sickness or hunger reaches 100, it becomes a ghost. After enough ghost events, it reincarnates as a fresh egg.
-- **Persists** — state survives restarts via `state.json`.
-
-## Installation
-
-Drop this folder into `custom_nodes/` and restart ComfyUI.
-
-## Usage
-
-```
-KSampler → VAE Decode → ComfyGotchiNode → Save Image
-```
-
-Wire the `comment` STRING output to a Display Text or Save node to see the creature's remarks about your slop.
+| Stage | Description |
+|-------|-------------|
+| ![Egg](images/tg001.png) **Egg** | Incubating. Feed it 10 images to hatch. The first 10 define its identity. |
+| ![Hatchling](images/tg002.png) **Hatchling** | Just hatched! Small and hungry. Needs feeding to grow up. |
+| ![Adult](images/tg003.png) **Adult** | Fully grown. Comments on your slop with personality. |
+| ![Evolved](images/tg005.png) **Evolved** | After 50 images eaten, mutates into a new form. |
+| ![Ghost](images/tg009.png) **Ghost** | It died. Reincarnates as a new egg after ~2 minutes. |
 
 ## The 10 Variants
+
+The first 10 images you feed determine which creature hatches. Keyword detection on the VLM captions ensures reliable classification.
+
+![Variants](images/tg006.png)
 
 | Variant | Hatches from slop containing... |
 |---------|------|
@@ -48,6 +41,19 @@ Wire the `comment` STRING output to a Display Text or Save node to see the creat
 | penguin | penguins, birds, arctic... |
 | blob | anything unrecognizable (default) |
 
+![Gameplay](images/tg007.png) ![Gameplay](images/tg008.png)
+
+## How It Works
+
+- **Feeds on AI slop** — pipe an IMAGE (your generations) through the ComfyGotchiNode. The creature eats and a local VLM (Qwen3-VL) generates a comment.
+- **First 10 images = identity** — the first 10 images fed during the egg phase determine the creature's variant and personality tone. Keyword-based detection on the VLM captions ensures reliable classification.
+- **Feels love** — when a ComfyUI API node (Gemini, Kling, OpenAI, etc.) executes, the creature's happiness rises.
+- **Gets hungry over time** — hunger, boredom, hygiene decay passively while ComfyUI runs.
+- **Poops** — yes. Clean it up or it gets sick.
+- **Evolves** — after every 50 images eaten cumulatively, the creature mutates into a new form.
+- **Dies and reincarnates** — if sickness or hunger reaches 100, it becomes a ghost. After ~2 minutes, it reincarnates as a fresh egg.
+- **Persists** — state survives restarts via `state.json`.
+
 ## Personality Tones
 
 The aesthetic of your first 10 slop images imprints a personality:
@@ -61,10 +67,36 @@ The aesthetic of your first 10 slop images imprints a personality:
 | cute, kawaii, soft | gentle |
 | horror, scary, creepy | morbid |
 
+## Installation
+
+Drop this folder into `custom_nodes/` and restart ComfyUI.
+
+## Usage
+
+```
+KSampler → VAE Decode → ComfyGotchiNode → Save Image
+```
+
+Wire the `comment` STRING output to a Display Text or Save node to see the creature's remarks about your slop.
+
+An example workflow is included in [`workflow/example workflow.json`](workflow/example%20workflow.json).
+
+![Workflow](images/example.png)
+
 ## Care
 
 - **Feed** it AI slop (pipe images through the node)
-- **Play** with it (PLAY button)
-- **Clean** its poop (CLEAN button)
-- **Medicine** when sick (MEDS button)
+- **Play** with it (PLAY button 🎾)
+- **Clean** its poop (CLEAN button 🧹)
+- **Medicine** when sick (MEDS button 💊)
 - **Love** happens automatically when API nodes execute
+
+## Reset
+
+To reset your Tamagotchi back to an egg:
+
+```bash
+curl -X POST http://127.0.0.1:8188/comfygotchi/reset
+```
+
+Or use the API endpoint `/comfygotchi/reset` in any HTTP client.
