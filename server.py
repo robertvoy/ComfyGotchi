@@ -3,21 +3,42 @@ import json
 import threading
 from datetime import datetime, timezone
 
-from .state import GotchiState, CONFIG
+from .state import GotchiState, CONFIG, DEFAULT_STATE
 
 STATE_FILE = os.path.join(os.path.dirname(__file__), "state.json")
 _lock = threading.Lock()
 _state = None
+_state_mtime = None
+
+def _disk_mtime():
+    try:
+        return os.path.getmtime(STATE_FILE)
+    except OSError:
+        return None
 
 def _get_state():
-    global _state
+    global _state, _state_mtime
+    mtime = _disk_mtime()
     if _state is None:
         _state = GotchiState.load(STATE_FILE)
+        _state_mtime = mtime
+    elif mtime is not None and _state_mtime is not None and mtime != _state_mtime:
+        # External edit of state.json detected — reload from disk
+        _state = GotchiState.load(STATE_FILE)
+        _state_mtime = mtime
     return _state
 
+def _reset_state():
+    global _state, _state_mtime
+    _state = GotchiState()
+    _state.save(STATE_FILE)
+    _state_mtime = _disk_mtime()
+
 def _save_state():
+    global _state_mtime
     s = _get_state()
     s.save(STATE_FILE)
+    _state_mtime = _disk_mtime()
 
 def _now():
     return datetime.now(timezone.utc)
@@ -104,6 +125,12 @@ def init_server(server_instance):
         with _lock:
             _save_state()
             return web.json_response({"ok": True})
+
+    @server_instance.routes.post("/comfygotchi/reset")
+    async def post_reset(request):
+        with _lock:
+            _reset_state()
+            return web.json_response(_get_state().to_dict())
 
     @server_instance.routes.get("/comfygotchi/config")
     async def get_config(request):
