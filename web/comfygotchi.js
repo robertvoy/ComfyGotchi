@@ -30,17 +30,29 @@ let lastState = null;
 let lastTickSent = 0;
 let animFrame = 0;
 let hoverButton = -1;
+let lastComment = "";
+let commentTimer = 0;
+let lastCommentHash = "";
 
 const BUTTONS = [
-  { x: 35, y: 266, r: 8, label: "PLAY", event: "play", icon: "🎾" },
-  { x: 75, y: 272, r: 8, label: "CLEAN", event: "clean", icon: "🧹" },
-  { x: 115, y: 272, r: 8, label: "MEDS", event: "medicine", icon: "💊" },
+  { x: 45, y: 270, r: 10, label: "PLAY", event: "play" },
+  { x: 110, y: 270, r: 10, label: "CLEAN", event: "clean" },
+  { x: 175, y: 270, r: 10, label: "MEDS", event: "medicine" },
 ];
 
 async function fetchState() {
   try {
     const r = await fetch("/comfygotchi/state");
     lastState = await r.json();
+    if (lastState && lastState.comment_history && lastState.comment_history.length > 0) {
+      const latest = lastState.comment_history[lastState.comment_history.length - 1];
+      const hash = JSON.stringify(latest);
+      if (hash !== lastCommentHash && latest) {
+        lastCommentHash = hash;
+        lastComment = typeof latest === "string" ? latest : (latest.comment || latest.text || "");
+        commentTimer = 300;
+      }
+    }
     return lastState;
   } catch (e) {
     console.warn("[ComfyGotchi] fetchState failed", e);
@@ -429,6 +441,56 @@ function drawText(ctx, text, x, y, color = PD) {
   ctx.fillText(text, x, y);
 }
 
+function drawSpeechBubble(ctx, x, y, text) {
+  if (!text) return;
+  const maxW = 180;
+  ctx.font = "7px monospace";
+  const lines = [];
+  const words = text.split(" ");
+  let line = "";
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxW) {
+      if (line) lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  const lineH = 9;
+  const bubbleH = lines.length * lineH + 6;
+  const bubbleW = maxW + 8;
+  const bx = x - bubbleW / 2;
+  const by = y - bubbleH - 4;
+
+  ctx.fillStyle = PW;
+  ctx.fillRect(bx, by, bubbleW, bubbleH);
+  ctx.strokeStyle = PD;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bx, by, bubbleW, bubbleH);
+  ctx.fillStyle = PW;
+  ctx.beginPath();
+  ctx.moveTo(x - 3, by + bubbleH);
+  ctx.lineTo(x + 3, by + bubbleH);
+  ctx.lineTo(x, by + bubbleH + 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = PD;
+  ctx.beginPath();
+  ctx.moveTo(x - 3, by + bubbleH);
+  ctx.lineTo(x, by + bubbleH + 4);
+  ctx.lineTo(x + 3, by + bubbleH);
+  ctx.stroke();
+
+  ctx.fillStyle = PD;
+  ctx.textBaseline = "top";
+  ctx.textAlign = "left";
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], bx + 4, by + 3 + i * lineH);
+  }
+}
+
 function drawCreature(ctx, state) {
   ctx.fillStyle = SHELL_COLOR;
   ctx.fillRect(0, 0, W, H);
@@ -497,6 +559,11 @@ function drawCreature(ctx, state) {
     drawPoop(ctx, cx, sy + sh - 12, poop);
   }
 
+  if (commentTimer > 0 && lastComment) {
+    drawSpeechBubble(ctx, cx, sy + 8, lastComment);
+    commentTimer--;
+  }
+
   const barY = sy + sh + 4;
   drawText(ctx, "HUN", sx + 2, barY, PD);
   drawBar(ctx, sx + 22, barY, state ? (state.hunger || 0) : 0, 100, 24, RED, PL);
@@ -538,10 +605,10 @@ function drawCreature(ctx, state) {
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.fillStyle = PD;
-    ctx.font = "7px monospace";
+    ctx.font = "6px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(btn.icon, btn.x, btn.y);
+    ctx.fillText(btn.label, btn.x, btn.y);
     ctx.textAlign = "left";
   }
 }
@@ -564,32 +631,38 @@ app.registerExtension({
         this.setDirtyCanvas(true, false);
       };
 
-      const origOnMouseDown = this.onMouseDown;
-      this.onMouseDown = function (e, canvasPos, ctx) {
-        const localX = canvasPos[0] - 0;
-        const localY = canvasPos[1] - DEVICE_OFFSET_Y;
+      this.onMouseDown = function (e, pos, node) {
+        if (!pos) return;
+        const localX = pos[0];
+        const localY = pos[1] - DEVICE_OFFSET_Y;
         for (let i = 0; i < BUTTONS.length; i++) {
           const btn = BUTTONS[i];
           const dx = localX - btn.x;
           const dy = localY - btn.y;
-          if (dx * dx + dy * dy <= btn.r * btn.r * 1.5) {
+          if (dx * dx + dy * dy <= (btn.r + 4) * (btn.r + 4)) {
             sendAction(btn.event);
+            const actionMsgs = {
+              play: "Yay! Let's play!",
+              clean: "All clean now!",
+              medicine: "Ugh... but I feel better.",
+            };
+            lastComment = actionMsgs[btn.event] || "";
+            commentTimer = 180;
             return true;
           }
         }
-        return origOnMouseDown ? origOnMouseDown.apply(this, arguments) : undefined;
       };
 
-      const origOnMouseMove = this.onMouseMove;
-      this.onMouseMove = function (e, canvasPos, ctx) {
-        const localX = canvasPos[0] - 0;
-        const localY = canvasPos[1] - DEVICE_OFFSET_Y;
+      this.onMouseMove = function (e, pos, node) {
+        if (!pos) return;
+        const localX = pos[0];
+        const localY = pos[1] - DEVICE_OFFSET_Y;
         let newHover = -1;
         for (let i = 0; i < BUTTONS.length; i++) {
           const btn = BUTTONS[i];
           const dx = localX - btn.x;
           const dy = localY - btn.y;
-          if (dx * dx + dy * dy <= btn.r * btn.r * 1.5) {
+          if (dx * dx + dy * dy <= (btn.r + 4) * (btn.r + 4)) {
             newHover = i;
             break;
           }
@@ -597,7 +670,6 @@ app.registerExtension({
         if (newHover !== hoverButton) {
           hoverButton = newHover;
         }
-        return origOnMouseMove ? origOnMouseMove.apply(this, arguments) : undefined;
       };
 
       return r;

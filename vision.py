@@ -52,11 +52,11 @@ def _load_qwen(model_path):
         return
     _unload_qwen()
     import torch
-    from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer
+    from transformers import AutoModelForImageTextToText, AutoProcessor, AutoTokenizer
     dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"[ComfyGotchi] Loading Qwen-VLM from {model_path} on {device}...")
-    _QWEN_STATE["model"] = AutoModelForVision2Seq.from_pretrained(
+    _QWEN_STATE["model"] = AutoModelForImageTextToText.from_pretrained(
         model_path, torch_dtype=dtype, attn_implementation="sdpa"
     ).to(device).eval()
     _QWEN_STATE["processor"] = AutoProcessor.from_pretrained(model_path)

@@ -58,6 +58,10 @@ def init_server(server_instance):
             s = _get_state()
             if event_type == "feed":
                 s.apply_feed()
+                if caption:
+                    s.comment_history.append(caption)
+                    if len(s.comment_history) > 50:
+                        s.comment_history = s.comment_history[-50:]
             elif event_type == "love":
                 s.apply_love()
             elif event_type == "tick":
@@ -78,10 +82,16 @@ def init_server(server_instance):
                 s.variant_determined = True
             elif event_type == "play":
                 s.apply_play()
+                s.comment_history.append("Yay! Let's play!")
+                if len(s.comment_history) > 50: s.comment_history = s.comment_history[-50:]
             elif event_type == "clean":
                 s.apply_clean()
+                s.comment_history.append("All clean now!")
+                if len(s.comment_history) > 50: s.comment_history = s.comment_history[-50:]
             elif event_type == "medicine":
                 s.apply_medicine()
+                s.comment_history.append("Ugh... but I feel better.")
+                if len(s.comment_history) > 50: s.comment_history = s.comment_history[-50:]
             s.last_event_at = _now().isoformat()
             _save_state()
             return web.json_response(s.to_dict())

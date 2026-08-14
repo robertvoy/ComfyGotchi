@@ -85,17 +85,32 @@ class ComfyGotchiNode:
         caption = ""
 
         if stage == "egg":
-            caption = caption_image(image, qwen_model, keep_model_loaded)
-            
+            try:
+                caption = caption_image(image, qwen_model, keep_model_loaded)
+            except Exception as e:
+                print(f"[ComfyGotchi] Caption failed in egg phase: {e}")
+                caption = ""
             egg_captions.append(caption)
             _post_event("egg_caption", caption)
             
             if len(egg_captions) >= 10 and not variant_determined:
-                variant, personality = determine_variant(egg_captions, qwen_model, keep_model_loaded)
+                try:
+                    variant, personality = determine_variant(egg_captions, qwen_model, keep_model_loaded)
+                except Exception as e:
+                    print(f"[ComfyGotchi] Variant determination failed: {e}")
+                    variant, personality = "blob", ""
                 _post_variant_update(variant, personality)
             
             _post_event("feed", caption)
-            comment = ""
+            progress = incubation_progress + 1
+            if progress >= 10:
+                comment = "*crack* ... something is happening!"
+            elif progress >= 7:
+                comment = "*wobble wobble*"
+            elif progress >= 4:
+                comment = "*tiny shake*"
+            else:
+                comment = "..."
 
         elif stage == "ghost":
             _post_event("feed", "")
@@ -104,11 +119,21 @@ class ComfyGotchiNode:
         else:
             _post_event("feed", "")
             
-            if random.random() < 0.25:
-                caption = caption_image(image, qwen_model, keep_model_loaded)
-                comment = generate_comment(mood, stage, tier, caption, personality, variant)
-            else:
-                comment = generate_comment(mood, stage, tier, None, personality, variant)
+            try:
+                if random.random() < 0.25:
+                    caption = caption_image(image, qwen_model, keep_model_loaded)
+                    comment = generate_comment(mood, stage, tier, caption, personality, variant)
+                else:
+                    comment = generate_comment(mood, stage, tier, None, personality, variant)
+            except Exception as e:
+                print(f"[ComfyGotchi] Comment generation failed: {e}")
+                comment = "..."
+            
+            if not comment:
+                comment = "..."
+
+        if not comment:
+            comment = "..."
 
         return (image, comment)
 
