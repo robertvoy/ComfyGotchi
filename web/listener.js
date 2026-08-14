@@ -86,7 +86,11 @@ function isApiNode(node) {
 
 function checkNodeAndSendLove(nodeId) {
   const node = getNodeById(String(nodeId));
-  if (!node) return;
+  if (!node) {
+    console.log(`[ComfyGotchi] executed node ${nodeId}: not found in graph`);
+    return;
+  }
+  console.log(`[ComfyGotchi] executed node ${nodeId}: type=${node.type}`);
   if (isApiNode(node)) {
     console.log(`[ComfyGotchi] Love! ${node.type} executed`);
     sendLove();
@@ -97,6 +101,7 @@ app.registerExtension({
   name: "comfygotchi_listener",
   async setup() {
     await loadApiNodeTypes();
+    console.log(`[ComfyGotchi] apiNodeTypes size: ${apiNodeTypes ? apiNodeTypes.size : 'null'}`);
     setInterval(() => {
       if (apiNodeTypes === null) loadApiNodeTypes();
     }, 30000);
@@ -104,17 +109,19 @@ app.registerExtension({
     api.addEventListener("executed", (evt) => {
       const detail = evt.detail || {};
       const nodeId = detail.node || detail.display_node;
+      console.log(`[ComfyGotchi] 'executed' event: detail=`, detail);
       if (nodeId) checkNodeAndSendLove(nodeId);
     });
 
     api.addEventListener("execution_start", (evt) => {
-      const detail = evt.detail || {};
-      const promptId = detail.prompt_id;
-      if (!promptId) return;
-      const prompt = api._promptConfigs?.[promptId] || api.prompts?.[promptId];
-      if (!prompt || !prompt.workflow) return;
-      for (const node of prompt.workflow.nodes || []) {
+      console.log(`[ComfyGotchi] 'execution_start' event:`, evt.detail);
+      // Check all nodes in current graph for API nodes
+      const graph = app.graph || app.canvas?.graph;
+      if (!graph) return;
+      const nodes = graph._nodes || [];
+      for (const node of nodes) {
         if (isApiNode(node)) {
+          console.log(`[ComfyGotchi] Love! (execution_start) ${node.type} in graph`);
           sendLove();
           break;
         }
