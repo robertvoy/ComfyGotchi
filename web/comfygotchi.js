@@ -111,9 +111,14 @@ function drawEgg(ctx, cx, cy, crackProgress, bob) {
       }
     }
   }
-  px(ctx, fx - 8, ey - 6, 2, 2, PD);
-  px(ctx, fx + 6, ey - 6, 2, 2, PD);
-  px(ctx, fx - 5, ey + 2, 6, 1, PM);
+  // Decorative spots (no eyes/mouth — it's an egg, not a creature yet)
+  px(ctx, fx - 7, ey - 8, 2, 1, PL);
+  px(ctx, fx - 6, ey - 7, 1, 1, PL);
+  px(ctx, fx + 5, ey - 4, 2, 2, PL);
+  px(ctx, fx + 6, ey - 3, 1, 1, PL);
+  px(ctx, fx - 8, ey + 6, 1, 2, PL);
+  px(ctx, fx + 4, ey + 8, 3, 1, PL);
+  px(ctx, fx + 5, ey + 9, 1, 1, PL);
   if (crackProgress > 0.3) {
     px(ctx, fx - 6, ey - 10, 1, 3, PD);
     px(ctx, fx - 5, ey - 8, 2, 1, PD);
