@@ -115,14 +115,21 @@ def _rule_based_caption(image_tensor):
         return f"a bright {dominant} image"
     return f"a {dominant} image"
 
-def _qwen_generate(pil_image, prompt_text, max_tokens=128):
+def _safe_pad_token_id(tokenizer):
+    pid = getattr(tokenizer, "pad_token_id", None)
+    if pid is None:
+        pid = getattr(tokenizer, "eos_token_id", None)
+    return pid
+
+def _qwen_generate(pil_image, prompt_text, max_tokens=128, retries=2):
     import torch
     model = _QWEN_STATE["model"]
     processor = _QWEN_STATE["processor"]
     tokenizer = _QWEN_STATE["tokenizer"]
     if model is None or processor is None or tokenizer is None:
         raise RuntimeError("Qwen model not loaded")
-    
+    pad_token_id = _safe_pad_token_id(tokenizer)
+
     conversation = [{"role": "user", "content": [
         {"type": "image", "image": pil_image},
         {"type": "text", "text": prompt_text}
@@ -131,18 +138,26 @@ def _qwen_generate(pil_image, prompt_text, max_tokens=128):
     inputs = processor(text=chat, images=[pil_image], return_tensors="pt")
     device = next(model.parameters()).device
     inputs = {k: v.to(device) if torch.is_tensor(v) else v for k, v in inputs.items()}
-    
-    output = model.generate(
-        **inputs,
-        max_new_tokens=max_tokens,
-        do_sample=True,
-        temperature=0.6,
-        top_p=0.9,
-        pad_token_id=tokenizer.pad_token_id,
-    )
-    input_len = inputs["input_ids"].shape[-1]
-    text = tokenizer.decode(output[0, input_len:], skip_special_tokens=True)
-    return text.strip()
+
+    last_text = ""
+    for attempt in range(retries + 1):
+        gen_kwargs = dict(
+            **inputs,
+            max_new_tokens=max_tokens,
+            do_sample=True,
+            temperature=0.6 if attempt == 0 else 0.3,
+            top_p=0.9,
+        )
+        if pad_token_id is not None:
+            gen_kwargs["pad_token_id"] = pad_token_id
+        output = model.generate(**gen_kwargs)
+        input_len = inputs["input_ids"].shape[-1]
+        text = tokenizer.decode(output[0, input_len:], skip_special_tokens=True).strip()
+        if text:
+            return text
+        last_text = text
+        print(f"[ComfyGotchi] Qwen returned empty caption, retry {attempt + 1}/{retries + 1}")
+    return last_text
 
 def _qwen_text_only(prompt_text, max_tokens=256):
     import torch
@@ -151,19 +166,22 @@ def _qwen_text_only(prompt_text, max_tokens=256):
     tokenizer = _QWEN_STATE["tokenizer"]
     if model is None or processor is None or tokenizer is None:
         raise RuntimeError("Qwen model not loaded")
-    
+    pad_token_id = _safe_pad_token_id(tokenizer)
+
     conversation = [{"role": "user", "content": [{"type": "text", "text": prompt_text}]}]
     chat = processor.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
     inputs = processor(text=chat, return_tensors="pt")
     device = next(model.parameters()).device
     inputs = {k: v.to(device) if torch.is_tensor(v) else v for k, v in inputs.items()}
-    
-    output = model.generate(
+
+    gen_kwargs = dict(
         **inputs,
         max_new_tokens=max_tokens,
         do_sample=False,
-        pad_token_id=tokenizer.pad_token_id,
     )
+    if pad_token_id is not None:
+        gen_kwargs["pad_token_id"] = pad_token_id
+    output = model.generate(**gen_kwargs)
     input_len = inputs["input_ids"].shape[-1]
     text = tokenizer.decode(output[0, input_len:], skip_special_tokens=True)
     return text.strip()
@@ -183,9 +201,16 @@ def caption_image(image_tensor, model_name="none (rule-based)", keep_model_loade
         caption = _qwen_generate(pil_image, "Describe this image in one short sentence.", max_tokens=64)
         if not keep_model_loaded:
             _unload_qwen()
+        if not caption:
+            print("[ComfyGotchi] Qwen returned empty caption after retries, using rule-based fallback")
+            return _rule_based_caption(image_tensor)
         return caption
     except Exception as e:
         print(f"[ComfyGotchi] Qwen caption failed: {e}, falling back")
+        try:
+            _unload_qwen()
+        except Exception:
+            pass
         return _rule_based_caption(image_tensor)
 
 def determine_variant(egg_captions, model_name="none (rule-based)", keep_model_loaded=True):

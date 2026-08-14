@@ -50,7 +50,7 @@ async function fetchState() {
       if (hash !== lastCommentHash && latest) {
         lastCommentHash = hash;
         lastComment = typeof latest === "string" ? latest : (latest.comment || latest.text || "");
-        commentTimer = 300;
+        commentTimer = lastState.last_comment_qwen ? 600 : 300;
       }
     }
     return lastState;

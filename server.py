@@ -28,8 +28,9 @@ def _apply_decay_on_read():
         try:
             last = datetime.fromisoformat(s.last_decay_at)
             elapsed = (_now() - last).total_seconds() / 60.0
-            if elapsed > 0 and elapsed < (CONFIG.TICK_TIMEOUT_SEC / 60.0 + 5):
-                s.apply_tick(elapsed)
+            if elapsed > 0:
+                capped = min(elapsed, CONFIG.CATCHUP_DECAY_MAX_MIN)
+                s.apply_tick(capped)
             else:
                 s.last_decay_at = _now().isoformat()
         except (ValueError, TypeError):
@@ -58,10 +59,12 @@ def init_server(server_instance):
             s = _get_state()
             if event_type == "feed":
                 s.apply_feed()
+            elif event_type == "comment":
                 if caption:
                     s.comment_history.append(caption)
                     if len(s.comment_history) > 50:
                         s.comment_history = s.comment_history[-50:]
+                s.last_comment_qwen = bool(body.get("qwen", False))
             elif event_type == "love":
                 s.apply_love()
             elif event_type == "tick":

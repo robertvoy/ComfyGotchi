@@ -6,9 +6,9 @@ import urllib.request
 from .vision import detect_qwen_models, caption_image, determine_variant
 from .prompts import generate_comment
 
-def _post_event(event_type, caption=""):
+def _post_event(event_type, caption="", qwen=False):
     try:
-        data = json.dumps({"type": event_type, "caption": caption}).encode("utf-8")
+        data = json.dumps({"type": event_type, "caption": caption, "qwen": qwen}).encode("utf-8")
         req = urllib.request.Request(
             "http://127.0.0.1:8188/comfygotchi/event",
             data=data,
@@ -96,10 +96,13 @@ class ComfyGotchiNode:
             if len(egg_captions) >= 10 and not variant_determined:
                 try:
                     variant, personality = determine_variant(egg_captions, qwen_model, keep_model_loaded)
+                    if not variant or variant == "blob" and not personality:
+                        # treat as not-yet-determined so we retry post-hatch
+                        print("[ComfyGotchi] Variant determination inconclusive, will retry post-hatch")
+                    else:
+                        _post_variant_update(variant, personality)
                 except Exception as e:
-                    print(f"[ComfyGotchi] Variant determination failed: {e}")
-                    variant, personality = "blob", ""
-                _post_variant_update(variant, personality)
+                    print(f"[ComfyGotchi] Variant determination failed (will retry post-hatch): {e}")
             
             _post_event("feed", caption)
             progress = incubation_progress + 1
@@ -111,23 +114,44 @@ class ComfyGotchiNode:
                 comment = "*tiny shake*"
             else:
                 comment = "..."
+            if comment:
+                _post_event("comment", comment)
 
         elif stage == "ghost":
             _post_event("feed", "")
             comment = generate_comment("dead", "ghost", tier, None, personality, variant)
+            if comment:
+                _post_event("comment", comment)
 
         else:
             _post_event("feed", "")
-            
+
+            if not variant_determined and len(egg_captions) >= 10:
+                try:
+                    rv, rp = determine_variant(egg_captions, qwen_model, keep_model_loaded)
+                    if rv and not (rv == "blob" and not rp):
+                        variant, personality = rv, rp
+                        _post_variant_update(variant, personality)
+                        variant_determined = True
+                        print(f"[ComfyGotchi] Variant determined post-hatch: {variant} / {personality}")
+                except Exception as e:
+                    print(f"[ComfyGotchi] Post-hatch variant retry failed: {e}")
+
             try:
+                used_qwen = False
                 if random.random() < 0.25:
                     caption = caption_image(image, qwen_model, keep_model_loaded)
+                    used_qwen = bool(caption) and qwen_model != "none (rule-based)"
                     comment = generate_comment(mood, stage, tier, caption, personality, variant)
                 else:
                     comment = generate_comment(mood, stage, tier, None, personality, variant)
             except Exception as e:
                 print(f"[ComfyGotchi] Comment generation failed: {e}")
                 comment = "..."
+                used_qwen = False
+
+            if comment:
+                _post_event("comment", comment, qwen=used_qwen)
             
             if not comment:
                 comment = "..."

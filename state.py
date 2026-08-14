@@ -26,6 +26,7 @@ class TunableConfig:
     T_GHOST_MIN: int = 10
     GHOST_EVENT_THRESHOLD: int = 10
     TICK_TIMEOUT_SEC: int = 120
+    CATCHUP_DECAY_MAX_MIN: int = 30
     POOP_MAX: int = 5
     PLAY_HAPPINESS_BOOST: float = 15.0
     CLEAN_HYGIENE_BOOST: float = 80.0
@@ -50,6 +51,7 @@ DEFAULT_STATE = {
     "personality": "",
     "egg_captions": [],
     "variant_determined": False,
+    "last_comment_qwen": False,
     "poop": 0,
     "hygiene": 100,
     "sickness": 0,
