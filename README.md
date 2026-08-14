@@ -76,7 +76,6 @@ Wire the `comment` STRING output to a Display Text or Save node to see the creat
 
 An example workflow is included in [`workflow/example workflow.json`](workflow/example%20workflow.json).
 
-![ComfyGotchi in ComfyUI](images/example.png)
 
 ## Care
 
