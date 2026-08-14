@@ -17,7 +17,7 @@ Your ComfyGotchi has opinions about your slop. It will comment on what you feed 
 | Stage | Image |
 |-------|-------|
 | **Egg** — Incubating. Feed it 10 images to hatch. | ![Egg](images/tg008.png) |
-| **Hatchling** — Just hatched! Small and hungry. | ![Hatchling](images/tg002.png) |
+| **Hatchling** — Just hatched! Small and hungry. | ![Hatchling](images/tg009.png) |
 | **Adult** — Fully grown. Comments on your slop. | ![Bunny](images/tg003.png) |
 | **Ghost** — It died. Reincarnates after ~2 minutes. | ![Ghost](images/tg007.png) |
 
