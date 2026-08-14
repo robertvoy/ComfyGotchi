@@ -31,3 +31,38 @@ def test_determine_variant_no_model_returns_blob():
 def test_determine_variant_empty_captions_returns_blob():
     v, p = determine_variant([], "none (rule-based)")
     assert v == "blob"
+
+def test_determine_variant_keywords_dog():
+    captions = [
+        "A golden retriever sits happily on a park lawn.",
+        "A golden retriever puppy on grass.",
+        "A dog with a joyful expression sits outdoors.",
+    ] * 4
+    v, p = determine_variant(captions, "none (rule-based)")
+    assert v == "dog"
+
+def test_determine_variant_keywords_cat():
+    captions = ["A fluffy orange tabby cat sits on a blanket."] * 10
+    v, p = determine_variant(captions, "none (rule-based)")
+    assert v == "cat"
+
+def test_determine_variant_keywords_robot():
+    captions = ["A robot with glowing eyes in a cyber city."] * 10
+    v, p = determine_variant(captions, "none (rule-based)")
+    assert v == "robot"
+
+def test_determine_variant_keywords_bunny():
+    captions = ["A cute bunny rabbit in a garden."] * 10
+    v, p = determine_variant(captions, "none (rule-based)")
+    assert v == "bunny"
+
+def test_determine_variant_keywords_dragon():
+    captions = ["A dragon with green scales and wings."] * 10
+    v, p = determine_variant(captions, "none (rule-based)")
+    assert v == "dragon"
+
+def test_determine_variant_personality_nature():
+    captions = ["A dog in a forest with trees and grass."] * 10
+    v, p = determine_variant(captions, "none (rule-based)")
+    assert v == "dog"
+    assert "nature" in p

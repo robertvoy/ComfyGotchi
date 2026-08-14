@@ -46,7 +46,7 @@ class ComfyGotchiNode:
         models = detect_qwen_models()
         return {
             "required": {
-                "image": ("IMAGE",),
+                "ai_slop": ("IMAGE", {"tooltip": "AI-generated image to feed your ComfyGotchi. It devours your slop and grows."}),
             },
             "optional": {
                 "qwen_model": (models, {"default": models[0], "tooltip": "Select a Qwen-VL model from models/LLM/Qwen-VL/, or 'none (rule-based)' for fallback"}),
@@ -55,11 +55,12 @@ class ComfyGotchiNode:
         }
 
     RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("image", "comment")
+    RETURN_NAMES = ("ai_slop", "comment")
     FUNCTION = "process"
     CATEGORY = "ComfyGotchi"
 
-    def process(self, image, qwen_model="none (rule-based)", keep_model_loaded=True, **kwargs):
+    def process(self, ai_slop, qwen_model="none (rule-based)", keep_model_loaded=True, **kwargs):
+        image = ai_slop
         state_dict = _get_state_dict()
         
         if state_dict is None:

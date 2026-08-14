@@ -213,16 +213,78 @@ def caption_image(image_tensor, model_name="none (rule-based)", keep_model_loade
             pass
         return _rule_based_caption(image_tensor)
 
+_VARIANT_KEYWORDS = {
+    "cat": ["cat", "kitten", "kitty", "feline", "tabby", "calico", "siamese", "ginger cat", "orange cat"],
+    "dog": ["dog", "puppy", "canine", "retriever", "poodle", "beagle", "husky", "corgi", "shepherd", "terrier", "bulldog", "shiba", "labrador"],
+    "monster": ["monster", "demon", "creature", "beast", "alien monster", "ghoul", "ogre", "troll", "horror"],
+    "dragon": ["dragon", "wyvern", "lizard", "reptile", "serpent", "dino", "dinosaur", "scales", "winged beast"],
+    "robot": ["robot", "android", "cyborg", "machine", "mechanical", "android", "droid", "bot", "cyber", "metallic"],
+    "phantom": ["ghost", "phantom", "spirit", "specter", "wraith", "shadowy", "ethereal", "apparition", "haunted"],
+    "alien": ["alien", "extraterrestrial", "ufo", "martian", "space creature", "green creature", "martian"],
+    "bunny": ["bunny", "rabbit", "hare", "lagomorph", "bunnies", "easter bunny"],
+    "penguin": ["penguin", "bird", "arctic", "ice", "flightless", "puffin", "antarctic"],
+}
+
+def _detect_variant_by_keywords(captions):
+    scores = {v: 0 for v in _VARIANT_KEYWORDS}
+    for cap in captions:
+        low = (cap or "").lower()
+        for variant, keywords in _VARIANT_KEYWORDS.items():
+            for kw in keywords:
+                if kw in low:
+                    scores[variant] += 1
+                    break  # one match per caption per variant
+    max_score = max(scores.values())
+    if max_score == 0:
+        return None, 0
+    winners = [v for v, s in scores.items() if s == max_score]
+    if len(winners) > 1:
+        return None, 0  # ambiguous tie
+    return winners[0], max_score
+
+def _detect_personality_by_keywords(captions):
+    text = " ".join(captions).lower()
+    personality_tags = []
+    if any(w in text for w in ["dark", "night", "shadow", "noir", "moody", "gothic", "black"]):
+        personality_tags.append("dark")
+    if any(w in text for w in ["bright", "sunny", "colorful", "vibrant", "cheerful", "rainbow"]):
+        personality_tags.append("bright")
+    if any(w in text for w in ["nature", "forest", "tree", "grass", "garden", "flower", "mountain", "organic"]):
+        personality_tags.append("nature")
+    if any(w in text for w in ["tech", "robot", "circuit", "cyber", "metal", "steel", "digital", "sci-fi", "futuristic"]):
+        personality_tags.append("tech")
+    if any(w in text for w in ["cute", "soft", "fluffy", "kawaii", "adorable", "cozy"]):
+        personality_tags.append("cute")
+    if any(w in text for w in ["horror", "scary", "creepy", "blood", "skull", "dark", "evil"]):
+        personality_tags.append("moody")
+    return " ".join(personality_tags[:3]) if personality_tags else ""
+
 def determine_variant(egg_captions, model_name="none (rule-based)", keep_model_loaded=True):
     variants = ["blob", "cat", "dog", "monster", "dragon", "robot", "phantom", "alien", "bunny", "penguin"]
-    
-    if model_name == "none (rule-based)" or model_name is None or not egg_captions:
+
+    if not egg_captions:
         return "blob", ""
-    
+
+    # PRIMARY: keyword-based detection — reliable, deterministic
+    kw_variant, kw_score = _detect_variant_by_keywords(egg_captions)
+    kw_personality = _detect_personality_by_keywords(egg_captions)
+
+    if kw_variant and kw_score >= 3:
+        # Strong keyword signal — use it directly
+        print(f"[ComfyGotchi] Variant from keywords: {kw_variant} (score={kw_score}), personality='{kw_personality}'")
+        return kw_variant, kw_personality
+
+    # FALLBACK: ask Qwen if available and keyword signal is weak
+    if model_name == "none (rule-based)" or model_name is None:
+        if kw_variant:
+            print(f"[ComfyGotchi] Weak keyword signal ({kw_variant} score={kw_score}), using it anyway (no Qwen)")
+            return kw_variant, kw_personality
+        return "blob", kw_personality
+
     model_path = _get_model_path(model_name)
     if model_path is None:
-        return "blob", ""
-    
+        return kw_variant or "blob", kw_personality
+
     try:
         _load_qwen(model_path)
         captions_text = "\n".join(f"{i+1}. {c}" for i, c in enumerate(egg_captions))
@@ -234,11 +296,11 @@ Image descriptions:
 {captions_text}
 
 Respond ONLY as JSON: {{"variant": "cat", "personality": "dark moody cinematic"}}"""
-        
+
         response = _qwen_text_only(prompt, max_tokens=128)
         if not keep_model_loaded:
             _unload_qwen()
-        
+
         import json as _json
         response = response.strip()
         if response.startswith("```"):
@@ -247,14 +309,21 @@ Respond ONLY as JSON: {{"variant": "cat", "personality": "dark moody cinematic"}
             result = _json.loads(response)
             variant = result.get("variant", "blob").lower().strip()
             if variant not in variants:
-                variant = "blob"
+                variant = kw_variant or "blob"
             personality = result.get("personality", "").strip()
+            if not personality:
+                personality = kw_personality
+            # Prefer keyword variant if Qwen disagrees and keyword score was decent
+            if kw_variant and kw_score >= 2 and variant != kw_variant:
+                print(f"[ComfyGotchi] Qwen said {variant} but keywords say {kw_variant} (score={kw_score}), trusting keywords")
+                variant = kw_variant
+            print(f"[ComfyGotchi] Variant from Qwen: {variant}, personality='{personality}'")
             return variant, personality
         except (_json.JSONDecodeError, KeyError):
             for v in variants:
                 if v in response.lower():
-                    return v, ""
-            return "blob", ""
+                    return v, kw_personality
+            return kw_variant or "blob", kw_personality
     except Exception as e:
         print(f"[ComfyGotchi] Variant determination failed: {e}")
-        return "blob", ""
+        return kw_variant or "blob", kw_personality
