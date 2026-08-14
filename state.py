@@ -11,17 +11,18 @@ class TunableConfig:
     EVOLUTION_THRESHOLD: int = 5000
     DELTA_FEED: float = 15.0
     DELTA_LOVE: float = 10.0
-    DELTA_HUNGER_PER_MIN: float = 1.5
-    DELTA_HAPPINESS_DECAY_PER_MIN: float = 0.5
-    DELTA_BOREDOM_PER_MIN: float = 0.8
-    DELTA_POOP_CHANCE: float = 0.15
-    DELTA_HYGIENE_DECAY_PER_MIN: float = 0.3
-    DELTA_SICKNESS_FROM_POOP: float = 2.0
-    DELTA_SICKNESS_FROM_BOREDOM: float = 1.0
-    DELTA_SICKNESS_FROM_HUNGER: float = 1.5
-    DELTA_SICKNESS_FROM_AGE: float = 0.5
+    DELTA_HUNGER_PER_MIN: float = 0.2
+    DELTA_HAPPINESS_DECAY_PER_MIN: float = 0.1
+    DELTA_BOREDOM_PER_MIN: float = 0.15
+    DELTA_POOP_CHANCE: float = 0.08
+    DELTA_HYGIENE_DECAY_PER_MIN: float = 0.05
+    DELTA_SICKNESS_FROM_POOP: float = 0.3
+    DELTA_SICKNESS_FROM_BOREDOM: float = 0.15
+    DELTA_SICKNESS_FROM_HUNGER: float = 0.25
+    DELTA_SICKNESS_FROM_AGE: float = 0.1
     SICKNESS_DEATH_THRESHOLD: float = 100.0
-    AGE_MAX_MINUTES: int = 120
+    AGE_MAX_MINUTES: int = 10080
+    AGE_MIN_MINUTES: int = 1440
     T_GHOST_MIN: int = 10
     GHOST_EVENT_THRESHOLD: int = 10
     TICK_TIMEOUT_SEC: int = 120
@@ -54,6 +55,7 @@ DEFAULT_STATE = {
     "sickness": 0,
     "boredom": 0,
     "age_minutes": 0,
+    "lifespan_minutes": 10080,
     "stats": {
         "total_images_eaten": 0,
         "images_this_life": 0,
@@ -196,14 +198,15 @@ class GotchiState:
             self.sickness = min(100, self.sickness + self._cfg.DELTA_SICKNESS_FROM_BOREDOM * em)
         if self.hunger > 80:
             self.sickness = min(100, self.sickness + self._cfg.DELTA_SICKNESS_FROM_HUNGER * em)
-        if self.age_minutes > self._cfg.AGE_MAX_MINUTES * 0.7:
-            age_factor = (self.age_minutes - self._cfg.AGE_MAX_MINUTES * 0.7) / (self._cfg.AGE_MAX_MINUTES * 0.3)
+        if self.age_minutes > self.lifespan_minutes * 0.7:
+            age_factor = (self.age_minutes - self.lifespan_minutes * 0.7) / (self.lifespan_minutes * 0.3)
             self.sickness = min(100, self.sickness + self._cfg.DELTA_SICKNESS_FROM_AGE * em * age_factor)
         self.last_decay_at = _now_iso()
         self._check_death()
         self.mood = self.derive_mood()
 
     def _hatch(self):
+        import random as _r
         self.stage = "hatchling"
         self.born_at = _now_iso()
         self.hunger = 40
@@ -215,6 +218,7 @@ class GotchiState:
         self.sickness = 0
         self.boredom = 0
         self.age_minutes = 0
+        self.lifespan_minutes = _r.randint(self._cfg.AGE_MIN_MINUTES, self._cfg.AGE_MAX_MINUTES)
 
     def _check_growup(self):
         if self.stage == "hatchling" and self.stats["images_this_life"] >= self._cfg.HATCH_THRESHOLD + self._cfg.N_FEEDS_GROWUP:
@@ -240,7 +244,7 @@ class GotchiState:
             self.died_at = _now_iso()
             self.mood = "dead"
             return
-        if self.age_minutes >= self._cfg.AGE_MAX_MINUTES:
+        if self.age_minutes >= self.lifespan_minutes:
             self.stage = "ghost"
             self.died_at = _now_iso()
             self.mood = "dead"
@@ -265,6 +269,7 @@ class GotchiState:
             self.sickness = 0
             self.boredom = 0
             self.age_minutes = 0
+            self.lifespan_minutes = 10080
             self.stats["images_this_life"] = 0
             self.stats["generations_lived"] += 1
             self.mood = self.derive_mood()
