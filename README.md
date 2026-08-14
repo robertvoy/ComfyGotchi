@@ -10,6 +10,8 @@ In the murky depths of your GPU, a tiny creature stirs inside its egg. It doesn'
 
 Feed it well and it grows. Neglect it and it gets hungry, bored, sick, and eventually dies — reincarnating as a new egg from the ashes of your discarded generations.
 
+Your ComfyGotchi thrives on creative energy. Every time you use a **ComfyUI Partner API node** (Gemini, Kling, OpenAI, Recraft, Luma, and 200+ others), your creature feels the love and gets happier. Using premium API nodes is the fastest way to keep it joyful.
+
 Your ComfyGotchi has opinions about your slop. It will comment on what you feed it, with attitude shaped by the aesthetic of those first 10 incubation images. Dark and moody slop produces a snarky creature. Bright and colorful slop produces a cheerful one.
 
 ## Lifecycle
