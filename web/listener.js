@@ -1,122 +1,51 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
-let apiNodeTypes = null;
-let apiNodePatterns = null;
+const MAX_TRACKED_PROMPTS = 256;
+const rewardedPromptIds = new Set();
+const rewardedPromptOrder = [];
 
-const API_MODULE_PREFIXES = [
-  "comfy_api_nodes",
-  "comfy_extras.nodes_partner",
-];
+function rememberPrompt(promptId) {
+  const key = String(promptId || "");
+  if (!key || rewardedPromptIds.has(key)) return false;
 
-async function loadApiNodeTypes() {
-  try {
-    const r = await fetch("/object_info");
-    const defs = await r.json();
-    const types = new Set();
-    const patterns = [];
-    for (const [name, def] of Object.entries(defs)) {
-      if (def.api_node === true) {
-        types.add(name);
-      }
-      if (def.python_module) {
-        for (const prefix of API_MODULE_PREFIXES) {
-          if (def.python_module.startsWith(prefix)) {
-            types.add(name);
-            break;
-          }
-        }
-      }
-    }
-    apiNodeTypes = types;
-    console.log(`[ComfyGotchi] Love detection: ${types.size} API node types loaded`);
-  } catch (e) {
-    console.warn("[ComfyGotchi] Failed to load object_info for love detection", e);
-    apiNodeTypes = null;
+  rewardedPromptIds.add(key);
+  rewardedPromptOrder.push(key);
+  while (rewardedPromptOrder.length > MAX_TRACKED_PROMPTS) {
+    rewardedPromptIds.delete(rewardedPromptOrder.shift());
   }
+  return true;
 }
 
-async function sendLove() {
+async function sendCreativeEnergy(promptId) {
   try {
-    await fetch("/comfygotchi/event", {
+    const response = await fetch("/comfygotchi/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "love" }),
+      body: JSON.stringify({
+        type: "love",
+        source: "workflow_success",
+        prompt_id: String(promptId),
+      }),
     });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
   } catch (e) {
-    console.warn("[ComfyGotchi] love event failed", e);
-  }
-}
-
-function getNodeById(nodeId) {
-  if (!nodeId) return null;
-  const graph = app.graph || app.canvas?.graph;
-  if (!graph) return null;
-  if (graph._nodes_by_id) return graph._nodes_by_id[nodeId];
-  if (graph._nodes) {
-    for (const n of graph._nodes) {
-      if (String(n.id) === String(nodeId)) return n;
-    }
-  }
-  return null;
-}
-
-function isApiNode(node) {
-  if (!node) return false;
-  if (apiNodeTypes && apiNodeTypes.has(node.type)) return true;
-  if (node.type) {
-    const t = node.type.toLowerCase();
-    if (t.includes("gemini") || t.includes("openai") || t.includes("nano") ||
-        t.includes("banana") || t.includes("kling") || t.includes("luma") ||
-        t.includes("ideogram") || t.includes("recraft") || t.includes("runway") ||
-        t.includes("sora") || t.includes("veo") || t.includes("bfl") ||
-        t.includes("bytedance") || t.includes("minimax") || t.includes("vidu") ||
-        t.includes("topaz") || t.includes("tripo") || t.includes("meshy") ||
-        t.includes("rodin") || t.includes("pixverse") || t.includes("wavespeed") ||
-        t.includes("heygen") || t.includes("sync") || t.includes("sonilo") ||
-        t.includes("magnific") || t.includes("reve") || t.includes("krea") ||
-        t.includes("elevenlabs") || t.includes("anthropic") || t.includes("grok") ||
-        t.includes("openrouter") || t.includes("beeble") || t.includes("quiver") ||
-        t.includes("wan_api") || t.includes("ltxv_api")) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function checkNodeAndSendLove(nodeId) {
-  const node = getNodeById(String(nodeId));
-  if (!node) return;
-  if (isApiNode(node)) {
-    console.log(`[ComfyGotchi] Love! ${node.type} executed`);
-    sendLove();
+    console.warn("[ComfyGotchi] creative energy event failed", e);
   }
 }
 
 app.registerExtension({
   name: "comfygotchi_listener",
-  async setup() {
-    await loadApiNodeTypes();
-    setInterval(() => {
-      if (apiNodeTypes === null) loadApiNodeTypes();
-    }, 30000);
-
-    api.addEventListener("executed", (evt) => {
+  setup() {
+    api.addEventListener("execution_success", (evt) => {
       const detail = evt.detail || {};
-      const nodeId = detail.node || detail.display_node;
-      if (nodeId) checkNodeAndSendLove(nodeId);
-    });
+      const promptId = detail.prompt_id;
+      if (!rememberPrompt(promptId)) return;
 
-    api.addEventListener("execution_start", (evt) => {
-      const graph = app.graph || app.canvas?.graph;
-      if (!graph) return;
-      const nodes = graph._nodes || [];
-      for (const node of nodes) {
-        if (isApiNode(node)) {
-          sendLove();
-          break;
-        }
-      }
+      console.log(`[ComfyGotchi] Creative energy! Workflow ${promptId} completed`);
+      sendCreativeEnergy(promptId);
     });
   },
 });

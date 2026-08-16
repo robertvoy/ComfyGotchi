@@ -1,7 +1,7 @@
 [project]
 name = "comfygotchi"
 version = "0.1.0"
-description = "A Tamagotchi that lives inside ComfyUI — eats images, feels love from API nodes, evolves."
+description = "A Tamagotchi that lives inside ComfyUI — eats images, gains joy from completed workflows, evolves."
 authors = [
     { name = "ComfyGotchi" }
 ]

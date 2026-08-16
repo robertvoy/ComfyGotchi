@@ -6,11 +6,20 @@ import urllib.request
 from .vision import detect_qwen_models, caption_image, determine_variant
 from .prompts import generate_comment
 
+def _comfy_base_url():
+    """Return the loopback URL for the currently running ComfyUI instance."""
+    try:
+        from comfy.cli_args import args
+        port = args.port
+    except Exception:
+        port = os.environ.get("COMFYUI_PORT", "8188")
+    return f"http://127.0.0.1:{port}"
+
 def _post_event(event_type, caption="", qwen=False):
     try:
         data = json.dumps({"type": event_type, "caption": caption, "qwen": qwen}).encode("utf-8")
         req = urllib.request.Request(
-            "http://127.0.0.1:8188/comfygotchi/event",
+            f"{_comfy_base_url()}/comfygotchi/event",
             data=data,
             headers={"Content-Type": "application/json"},
             method="POST",
@@ -21,7 +30,7 @@ def _post_event(event_type, caption="", qwen=False):
 
 def _get_state_dict():
     try:
-        req = urllib.request.Request("http://127.0.0.1:8188/comfygotchi/state")
+        req = urllib.request.Request(f"{_comfy_base_url()}/comfygotchi/state")
         with urllib.request.urlopen(req, timeout=5) as resp:
             return json.loads(resp.read())
     except Exception:
@@ -31,7 +40,7 @@ def _post_variant_update(variant, personality):
     try:
         data = json.dumps({"type": "set_variant", "variant": variant, "personality": personality}).encode("utf-8")
         req = urllib.request.Request(
-            "http://127.0.0.1:8188/comfygotchi/event",
+            f"{_comfy_base_url()}/comfygotchi/event",
             data=data,
             headers={"Content-Type": "application/json"},
             method="POST",
