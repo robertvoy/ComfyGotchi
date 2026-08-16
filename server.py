@@ -9,6 +9,22 @@ STATE_FILE = os.path.join(os.path.dirname(__file__), "state.json")
 _lock = threading.Lock()
 _state = None
 _state_mtime = None
+_recent_love_prompt_ids = set()
+_recent_love_prompt_order = []
+_MAX_RECENT_LOVE_PROMPTS = 256
+
+def _accept_love_prompt(prompt_id):
+    """Deduplicate workflow rewards sent by multiple open browser tabs."""
+    if prompt_id is None:
+        return True
+    key = str(prompt_id)
+    if key in _recent_love_prompt_ids:
+        return False
+    _recent_love_prompt_ids.add(key)
+    _recent_love_prompt_order.append(key)
+    while len(_recent_love_prompt_order) > _MAX_RECENT_LOVE_PROMPTS:
+        _recent_love_prompt_ids.discard(_recent_love_prompt_order.pop(0))
+    return True
 
 def _disk_mtime():
     try:
@@ -33,6 +49,8 @@ def _reset_state():
     _state = GotchiState()
     _state.save(STATE_FILE)
     _state_mtime = _disk_mtime()
+    _recent_love_prompt_ids.clear()
+    _recent_love_prompt_order.clear()
 
 def _save_state():
     global _state_mtime
@@ -87,7 +105,8 @@ def init_server(server_instance):
                         s.comment_history = s.comment_history[-50:]
                 s.last_comment_qwen = bool(body.get("qwen", False))
             elif event_type == "love":
-                s.apply_love()
+                if _accept_love_prompt(body.get("prompt_id")):
+                    s.apply_love()
             elif event_type == "tick":
                 elapsed = body.get("elapsed_minutes", 1.0)
                 s.apply_tick(elapsed)

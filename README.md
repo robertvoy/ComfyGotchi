@@ -10,7 +10,7 @@ In the murky depths of your GPU, a tiny creature stirs inside its egg. It doesn'
 
 Feed it well and it grows. Neglect it and it gets hungry, bored, sick, and eventually dies — reincarnating as a new egg from the ashes of your discarded generations.
 
-Your ComfyGotchi thrives on creative energy. Every time you use a **ComfyUI Partner API node** (Gemini, Kling, OpenAI, Recraft, Luma, and 200+ others), your creature feels the love and gets happier. Using premium API nodes is the fastest way to keep it joyful.
+Your ComfyGotchi thrives on creative energy. Every successful workflow gives it a happiness boost, whether the workflow runs local models or API nodes. Feeding images and using the care buttons provide additional ways to keep it joyful.
 
 Your ComfyGotchi has opinions about your slop. It will comment on what you feed it, with attitude shaped by the aesthetic of those first 10 incubation images. Dark and moody slop produces a snarky creature. Bright and colorful slop produces a cheerful one.
 
@@ -44,7 +44,7 @@ The first 10 images you feed determine which creature hatches. Keyword detection
 
 - **Feeds on AI slop** — pipe an IMAGE (your generations) through the ComfyGotchiNode. The creature eats and a local VLM (Qwen3-VL) generates a comment.
 - **First 10 images = identity** — the first 10 images fed during the egg phase determine the creature's variant and personality tone. Keyword-based detection on the VLM captions ensures reliable classification.
-- **Feels love** — when a ComfyUI API node (Gemini, Kling, OpenAI, etc.) executes, the creature's happiness rises.
+- **Absorbs creative energy** — every successful ComfyUI workflow raises happiness once, regardless of which nodes or models it uses.
 - **Gets hungry over time** — hunger, boredom, hygiene decay passively while ComfyUI runs.
 - **Poops** — yes. Clean it up or it gets sick.
 - **Evolves** — after every 50 images eaten cumulatively, the creature mutates into a new form.
@@ -85,7 +85,7 @@ An example workflow is included in [`workflow/example workflow.json`](workflow/e
 - **Play** with it (PLAY button 🎾)
 - **Clean** its poop (CLEAN button 🧹)
 - **Medicine** when sick (MEDS button 💊)
-- **Love** happens automatically when API nodes execute
+- **Creative energy** arrives automatically after every successful workflow
 
 ## Reset
 
